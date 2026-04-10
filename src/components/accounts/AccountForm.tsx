@@ -58,12 +58,12 @@ export function AccountForm({ open, onClose, onSuccess, account }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>{isEdit ? '계정 수정' : '계정 추가'}</DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 overflow-y-auto flex-1 pr-1">
           <div className="space-y-1">
             <Label htmlFor="name">계정 별칭</Label>
             <Input id="name" value={name} onChange={e => setName(e.target.value)} placeholder="예: share01" required />
