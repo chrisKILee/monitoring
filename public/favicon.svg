@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <!-- Dark background -->
+  <rect width="32" height="32" rx="7" fill="#0F172A"/>
+  <!-- Usage bars -->
+  <rect x="5" y="18" width="5" height="10" rx="1.5" fill="#6D28D9"/>
+  <rect x="13" y="12" width="5" height="16" rx="1.5" fill="#7C3AED"/>
+  <rect x="21" y="7" width="5" height="21" rx="1.5" fill="#A78BFA"/>
+  <!-- Trend line + dot -->
+  <polyline points="7.5,18 15.5,12 23.5,7" fill="none" stroke="#E9D5FF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="23.5" cy="7" r="2" fill="#E9D5FF"/>
+</svg>
