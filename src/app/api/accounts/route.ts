@@ -20,27 +20,45 @@ export async function GET() {
   return NextResponse.json({ data: accounts })
 }
 
-/** raw cookie string(a=b; c=d) 또는 JSON 모두 파싱해서 Record로 반환 */
-function parseCookieInput(input: string): Record<string, string> | null {
-  const trimmed = input.trim()
-  // JSON 형식 시도
-  if (trimmed.startsWith('{')) {
-    try {
-      return JSON.parse(trimmed) as Record<string, string>
-    } catch {
-      return null
-    }
-  }
-  // raw cookie string: "key=value; key2=value2"
+/** raw cookie string(a=b; c=d) 파싱 */
+function parseCookieString(cookieStr: string): Record<string, string> {
   const result: Record<string, string> = {}
-  for (const part of trimmed.split(';')) {
+  for (const part of cookieStr.split(';')) {
     const idx = part.indexOf('=')
     if (idx === -1) continue
     const key = part.slice(0, idx).trim()
     const val = part.slice(idx + 1).trim()
     if (key) result[key] = val
   }
-  return Object.keys(result).length > 0 ? result : null
+  return result
+}
+
+/** curl 명령어, raw cookie string, JSON 모두 파싱해서 Record로 반환 */
+function parseCookieInput(input: string): { cookies: Record<string, string>; orgId?: string } | null {
+  const trimmed = input.trim()
+
+  // curl 명령어: -b '...' 또는 --cookie '...' 에서 쿠키 추출
+  if (trimmed.startsWith('curl')) {
+    const cookieMatch = trimmed.match(/(?:-b|--cookie)\s+['"]([^'"]+)['"]/)
+    if (!cookieMatch) return null
+    const cookies = parseCookieString(cookieMatch[1])
+    // URL에서 orgId 추출
+    const orgMatch = trimmed.match(/organizations\/([a-f0-9-]{36})/)
+    return { cookies, orgId: orgMatch?.[1] }
+  }
+
+  // JSON 형식
+  if (trimmed.startsWith('{')) {
+    try {
+      return { cookies: JSON.parse(trimmed) as Record<string, string> }
+    } catch {
+      return null
+    }
+  }
+
+  // raw cookie string
+  const cookies = parseCookieString(trimmed)
+  return Object.keys(cookies).length > 0 ? { cookies } : null
 }
 
 export async function POST(req: Request) {
@@ -54,19 +72,20 @@ export async function POST(req: Request) {
       )
     }
 
-    // JSON 또는 raw cookie string 파싱 + orgId 자동 추출
-    const parsed = parseCookieInput(body.cookiesJson)
-    if (!parsed) {
+    // curl 명령어 / raw cookie string / JSON 파싱 + orgId 자동 추출
+    const parseResult = parseCookieInput(body.cookiesJson)
+    if (!parseResult) {
       return NextResponse.json(
-        { error: { code: 'VALIDATION_ERROR', message: '쿠키 형식이 올바르지 않습니다. JSON 또는 raw cookie string을 붙여넣어 주세요.' } },
+        { error: { code: 'VALIDATION_ERROR', message: '쿠키 형식이 올바르지 않습니다. curl 명령어, cookie 헤더값, JSON 중 하나를 붙여넣어 주세요.' } },
         { status: 400 }
       )
     }
 
-    const orgId = parsed.lastActiveOrg || parsed._orgId
+    const { cookies: parsed, orgId: curlOrgId } = parseResult
+    const orgId = curlOrgId || parsed.lastActiveOrg || parsed._orgId
     if (!orgId) {
       return NextResponse.json(
-        { error: { code: 'VALIDATION_ERROR', message: 'lastActiveOrg를 찾을 수 없습니다. Network 탭에서 cookie 헤더 전체를 복사해주세요.' } },
+        { error: { code: 'VALIDATION_ERROR', message: 'orgId를 찾을 수 없습니다. curl 명령어 전체 또는 Network 탭 cookie 헤더를 붙여넣어 주세요.' } },
         { status: 400 }
       )
     }
@@ -83,7 +102,7 @@ export async function POST(req: Request) {
       data: {
         name: body.name,
         orgId,
-        encryptedCookies: encrypt(JSON.stringify(parsed)),
+        encryptedCookies: encrypt(JSON.stringify(parsed)),  // 항상 JSON으로 정규화해서 저장
       },
       select: { id: true, name: true, orgId: true, isActive: true, createdAt: true },
     })
