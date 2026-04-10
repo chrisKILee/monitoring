@@ -17,7 +17,6 @@ interface Props {
 export function AccountForm({ open, onClose, onSuccess, account }: Props) {
   const isEdit = Boolean(account)
   const [name, setName] = useState(account?.name ?? '')
-  const [orgId, setOrgId] = useState(account?.orgId ?? '')
   const [cookiesJson, setCookiesJson] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -36,7 +35,7 @@ export function AccountForm({ open, onClose, onSuccess, account }: Props) {
       const url = isEdit ? `/api/accounts/${account!.id}` : '/api/accounts'
       const method = isEdit ? 'PUT' : 'POST'
       const body: Record<string, string> = { name }
-      if (!isEdit) { body.orgId = orgId; body.cookiesJson = cookiesJson }
+      if (!isEdit) body.cookiesJson = cookiesJson
       if (isEdit && cookiesJson.trim()) body.cookiesJson = cookiesJson
 
       const res = await fetch(url, {
@@ -70,21 +69,13 @@ export function AccountForm({ open, onClose, onSuccess, account }: Props) {
             <Input id="name" value={name} onChange={e => setName(e.target.value)} placeholder="예: share01" required />
           </div>
 
-          {!isEdit && (
-            <div className="space-y-1">
-              <Label htmlFor="orgId">기관 ID (Organization ID)</Label>
-              <Input id="orgId" value={orgId} onChange={e => setOrgId(e.target.value)}
-                placeholder="예: 76a707e4-d518-4722-ae55-012d4d0ad164" required={!isEdit} />
-            </div>
-          )}
-
           <div className="space-y-1">
             <Label htmlFor="cookies">쿠키 JSON {isEdit && <span className="text-muted-foreground">(변경 시에만 입력)</span>}</Label>
             <Textarea id="cookies" value={cookiesJson} onChange={e => setCookiesJson(e.target.value)}
-              placeholder={'{\n  "sessionKey": "sk-ant-sid02-...",\n  "anthropic-device-id": "..."\n}'}
+              placeholder={'{\n  "sessionKey": "sk-ant-sid02-...",\n  "anthropic-device-id": "...",\n  "lastActiveOrg": "..."\n}'}
               rows={5} className="font-mono text-xs" required={!isEdit} />
             <p className="text-xs text-muted-foreground">
-              claude.ai에서 F12 → Console → 추출 스크립트 실행 후 붙여넣기
+              claude.ai에서 F12 → Console → 추출 스크립트 실행 후 붙여넣기 (기관 ID 자동 추출)
             </p>
           </div>
 
