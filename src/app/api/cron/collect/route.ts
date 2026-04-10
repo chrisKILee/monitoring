@@ -5,12 +5,28 @@ import { decrypt } from '@/lib/crypto'
 import { predict, isExpiringSoon } from '@/lib/prediction'
 import { sendAlert } from '@/lib/alert'
 
-export async function POST(req: Request) {
-  const secret = req.headers.get('x-cron-secret')
-  if (!secret || secret !== process.env.CRON_SECRET) {
+function validateSecret(req: Request): boolean {
+  const headerSecret = req.headers.get('x-cron-secret')
+  const urlSecret = new URL(req.url).searchParams.get('secret')
+  const expected = process.env.CRON_SECRET
+  return (headerSecret === expected) || (urlSecret === expected)
+}
+
+export async function GET(req: Request) {
+  if (!validateSecret(req)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
+  return runCollect()
+}
 
+export async function POST(req: Request) {
+  if (!validateSecret(req)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+  return runCollect()
+}
+
+async function runCollect() {
   const accounts = await prisma.account.findMany({
     where: { isActive: true },
   })
