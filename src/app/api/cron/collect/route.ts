@@ -38,8 +38,9 @@ async function runCollect() {
 
   const collected = results.filter(r => r.status === 'fulfilled').length
   const errors = results
-    .filter((r): r is PromiseRejectedResult => r.status === 'rejected')
-    .map(r => String(r.reason))
+    .map((r, i) => ({ r, account: accounts[i] }))
+    .filter(({ r }) => r.status === 'rejected')
+    .map(({ r, account }) => `[${account.name}] ${String((r as PromiseRejectedResult).reason)}`)
 
   return NextResponse.json({ collected, errors, total: accounts.length })
 }
