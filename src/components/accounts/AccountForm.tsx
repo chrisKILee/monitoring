@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -20,6 +20,14 @@ export function AccountForm({ open, onClose, onSuccess, account }: Props) {
   const [cookiesJson, setCookiesJson] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (open) {
+      setName(account?.name ?? '')
+      setCookiesJson('')
+      setError(null)
+    }
+  }, [open, account])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
