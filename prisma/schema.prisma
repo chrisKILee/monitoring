@@ -15,10 +15,11 @@ model Account {
   id               String    @id @default(cuid())
   name             String
   orgId            String    @unique
-  encryptedCookies String
-  isActive         Boolean   @default(true)
-  lastFetchedAt    DateTime?
-  lastError        String?
+  encryptedCookies  String
+  cookieExpiresAt   DateTime?
+  isActive          Boolean   @default(true)
+  lastFetchedAt     DateTime?
+  lastError         String?
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 

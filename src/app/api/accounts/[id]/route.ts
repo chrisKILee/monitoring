@@ -51,7 +51,11 @@ export async function PUT(req: Request, { params }: Params) {
       ...(body.cookiesJson && (() => {
         const normalized = normalizeCookies(body.cookiesJson!)
         if (!normalized) throw new Error('쿠키 형식이 올바르지 않습니다')
-        return { encryptedCookies: encrypt(normalized) }
+        return {
+          encryptedCookies: encrypt(normalized),
+          cookieExpiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+          lastError: null,
+        }
       })()),
       ...(body.isActive !== undefined && { isActive: body.isActive }),
     },

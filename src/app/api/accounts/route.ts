@@ -10,11 +10,11 @@ export async function GET() {
       name: true,
       orgId: true,
       isActive: true,
+      cookieExpiresAt: true,
       lastFetchedAt: true,
       lastError: true,
       createdAt: true,
       updatedAt: true,
-      // encryptedCookies 제외 (마스킹)
     },
   })
   return NextResponse.json({ data: accounts })
@@ -101,11 +101,14 @@ export async function POST(req: Request) {
       )
     }
 
+    const cookieExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30일 후
+
     const account = await prisma.account.create({
       data: {
         name: body.name,
         orgId,
-        encryptedCookies: encrypt(JSON.stringify(parsed)),  // 항상 JSON으로 정규화해서 저장
+        encryptedCookies: encrypt(JSON.stringify(parsed)),
+        cookieExpiresAt,
       },
       select: { id: true, name: true, orgId: true, isActive: true, createdAt: true },
     })
