@@ -3,9 +3,9 @@ import { createCipheriv, createDecipheriv, randomBytes } from 'crypto'
 const ALGORITHM = 'aes-256-gcm'
 
 function getKey(): Buffer {
-  const keyHex = process.env.COOKIE_ENCRYPTION_KEY
+  const keyHex = process.env.COOKIE_ENCRYPTION_KEY?.trim()
   if (!keyHex) throw new Error('COOKIE_ENCRYPTION_KEY 환경변수가 설정되지 않았습니다')
-  if (keyHex.length !== 64) throw new Error('COOKIE_ENCRYPTION_KEY는 64자 hex(32 bytes)여야 합니다')
+  if (keyHex.length !== 64) throw new Error(`COOKIE_ENCRYPTION_KEY는 64자 hex여야 합니다 (현재 ${keyHex.length}자)`)
   return Buffer.from(keyHex, 'hex')
 }
 
