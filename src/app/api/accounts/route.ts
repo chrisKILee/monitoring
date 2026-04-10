@@ -20,6 +20,29 @@ export async function GET() {
   return NextResponse.json({ data: accounts })
 }
 
+/** raw cookie string(a=b; c=d) 또는 JSON 모두 파싱해서 Record로 반환 */
+function parseCookieInput(input: string): Record<string, string> | null {
+  const trimmed = input.trim()
+  // JSON 형식 시도
+  if (trimmed.startsWith('{')) {
+    try {
+      return JSON.parse(trimmed) as Record<string, string>
+    } catch {
+      return null
+    }
+  }
+  // raw cookie string: "key=value; key2=value2"
+  const result: Record<string, string> = {}
+  for (const part of trimmed.split(';')) {
+    const idx = part.indexOf('=')
+    if (idx === -1) continue
+    const key = part.slice(0, idx).trim()
+    const val = part.slice(idx + 1).trim()
+    if (key) result[key] = val
+  }
+  return Object.keys(result).length > 0 ? result : null
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json() as { name?: string; cookiesJson?: string }
@@ -31,13 +54,11 @@ export async function POST(req: Request) {
       )
     }
 
-    // cookiesJson 유효성 검사 + orgId 자동 추출
-    let parsed: Record<string, string>
-    try {
-      parsed = JSON.parse(body.cookiesJson)
-    } catch {
+    // JSON 또는 raw cookie string 파싱 + orgId 자동 추출
+    const parsed = parseCookieInput(body.cookiesJson)
+    if (!parsed) {
       return NextResponse.json(
-        { error: { code: 'VALIDATION_ERROR', message: 'cookiesJson이 유효한 JSON이 아닙니다' } },
+        { error: { code: 'VALIDATION_ERROR', message: '쿠키 형식이 올바르지 않습니다. JSON 또는 raw cookie string을 붙여넣어 주세요.' } },
         { status: 400 }
       )
     }
@@ -45,7 +66,7 @@ export async function POST(req: Request) {
     const orgId = parsed.lastActiveOrg || parsed._orgId
     if (!orgId) {
       return NextResponse.json(
-        { error: { code: 'VALIDATION_ERROR', message: 'cookiesJson에 lastActiveOrg가 없습니다. 추출 스크립트를 다시 실행해주세요.' } },
+        { error: { code: 'VALIDATION_ERROR', message: 'lastActiveOrg를 찾을 수 없습니다. Network 탭에서 cookie 헤더 전체를 복사해주세요.' } },
         { status: 400 }
       )
     }
@@ -62,7 +83,7 @@ export async function POST(req: Request) {
       data: {
         name: body.name,
         orgId,
-        encryptedCookies: encrypt(body.cookiesJson),
+        encryptedCookies: encrypt(JSON.stringify(parsed)),
       },
       select: { id: true, name: true, orgId: true, isActive: true, createdAt: true },
     })

@@ -72,10 +72,10 @@ export function AccountForm({ open, onClose, onSuccess, account }: Props) {
           <div className="space-y-1">
             <Label htmlFor="cookies">쿠키 JSON {isEdit && <span className="text-muted-foreground">(변경 시에만 입력)</span>}</Label>
             <Textarea id="cookies" value={cookiesJson} onChange={e => setCookiesJson(e.target.value)}
-              placeholder={'{\n  "sessionKey": "sk-ant-sid02-...",\n  "anthropic-device-id": "...",\n  "lastActiveOrg": "..."\n}'}
+              placeholder={'F12 → Network → 아무 요청 클릭 → Request Headers → cookie: 값 전체 복사'}
               rows={5} className="font-mono text-xs" required={!isEdit} />
             <p className="text-xs text-muted-foreground">
-              claude.ai에서 F12 → Console → 추출 스크립트 실행 후 붙여넣기 (기관 ID 자동 추출)
+              F12 → Network 탭 → claude.ai 요청 클릭 → Request Headers → <code>cookie</code> 값 전체 붙여넣기
             </p>
           </div>
 
