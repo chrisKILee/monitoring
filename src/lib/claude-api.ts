@@ -114,6 +114,7 @@ function parseUsageResponse(raw: Record<string, unknown>): UsageResponse {
     planName,
     resetAt,
     rawResponse: raw,
+    cookieExpiresAt: null,  // fetchUsage에서 Set-Cookie 파싱 후 덮어씀
   }
 }
 
