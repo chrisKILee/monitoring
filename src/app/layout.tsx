@@ -4,7 +4,7 @@ import { Nav } from "@/components/layout/Nav";
 import "./globals.css";
 
 const pretendard = localFont({
-  src: "../../node_modules/pretendard/dist/web/variable/woff2/PretendardVariable.woff2",
+  src: "../fonts/PretendardVariable.woff2",
   variable: "--font-pretendard",
   display: "swap",
   weight: "100 900",
