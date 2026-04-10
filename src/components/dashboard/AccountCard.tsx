@@ -1,5 +1,6 @@
 'use client'
 
+import { useMemo } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
@@ -37,45 +38,150 @@ function resetLabel(resetAt: string | null): string {
   if (diff <= 0) return '곧 초기화'
   const h = Math.floor(diff / 3_600_000)
   const m = Math.floor((diff % 3_600_000) / 60_000)
-  if (h >= 24) {
-    const days = Math.floor(h / 24)
-    return `${days}일 후 초기화`
-  }
+  if (h >= 24) return `${Math.floor(h / 24)}일 후 초기화`
   if (h > 0) return `${h}h ${m}m 후 초기화`
   return `${m}m 후 초기화`
 }
 
-function UsageBar({
-  label,
+function timeElapsedPct(resetAt: string | null, windowMs: number): number {
+  if (!resetAt) return 0
+  const remaining = new Date(resetAt).getTime() - Date.now()
+  const elapsed = Math.max(0, windowMs - remaining)
+  return Math.min(100, (elapsed / windowMs) * 100)
+}
+
+/** 5시간 윈도우: 20% 단위 5칸 + 현재 시간 커서 */
+function Segmented5hBar({
   value,
   resetAt,
   danger,
 }: {
-  label: string
   value: number | null
   resetAt: string | null
   danger?: boolean
 }) {
   const pct = value ?? 0
-  const color =
+  const timePct = timeElapsedPct(resetAt, 5 * 60 * 60 * 1000)
+
+  const barColor =
     pct >= 90 ? 'bg-red-500' :
-    pct >= 70 ? 'bg-yellow-500' :
+    pct > timePct + 5 ? 'bg-yellow-500' :
     'bg-emerald-500'
 
   return (
-    <div className="space-y-0.5">
+    <div className="space-y-1">
+      <div className="flex justify-between items-center text-xs">
+        <span className="text-muted-foreground font-medium">5시간 윈도우</span>
+        <span className={`font-bold tabular-nums ${pct >= 90 ? 'text-red-500' : pct >= 70 ? 'text-yellow-600' : ''}`}>
+          {value !== null ? `${pct}%` : '-'}
+        </span>
+      </div>
+
+      {/* 바 */}
+      <div className="relative h-4 w-full rounded bg-muted overflow-hidden">
+        {/* 사용량 채우기 */}
+        <div
+          className={`h-full transition-all ${barColor} ${danger && pct >= 90 ? 'animate-pulse' : ''}`}
+          style={{ width: `${Math.min(pct, 100)}%` }}
+        />
+        {/* 20% 단위 구분선 */}
+        {[20, 40, 60, 80].map(tick => (
+          <div
+            key={tick}
+            className="absolute top-0 bottom-0 w-px bg-background/60"
+            style={{ left: `${tick}%` }}
+          />
+        ))}
+        {/* 현재 시간 커서 */}
+        {resetAt && (
+          <div
+            className="absolute top-0 bottom-0 w-0.5 bg-white/90 shadow"
+            style={{ left: `${timePct}%` }}
+          />
+        )}
+      </div>
+
+      {/* 시간 눈금 */}
+      <div className="flex justify-between text-[10px] text-muted-foreground">
+        {[0, 1, 2, 3, 4, 5].map(h => <span key={h}>{h}h</span>)}
+      </div>
+
+      {resetAt && (
+        <p className="text-[10px] text-muted-foreground text-right">{resetLabel(resetAt)}</p>
+      )}
+    </div>
+  )
+}
+
+/** 7일 윈도우: 7칸 그리드 — 시간 경과(회색) vs 사용량(컬러) 비교 */
+function Grid7dBar({
+  label,
+  value,
+  resetAt,
+}: {
+  label: string
+  value: number | null
+  resetAt: string | null
+}) {
+  const pct = value ?? 0
+
+  const { daysPassed, dayFraction } = useMemo(() => {
+    if (!resetAt) return { daysPassed: 0, dayFraction: 0 }
+    const remaining = new Date(resetAt).getTime() - Date.now()
+    const total = 7 * 24 * 60 * 60 * 1000
+    const elapsed = Math.max(0, total - remaining)
+    const days = elapsed / (24 * 60 * 60 * 1000)
+    return { daysPassed: Math.floor(days), dayFraction: days % 1 }
+  }, [resetAt])
+
+  const timePct = ((daysPassed + dayFraction) / 7) * 100
+  const cellWidth = 100 / 7
+
+  const fillColor =
+    pct >= 90 ? 'bg-red-400/80' :
+    pct > timePct + 5 ? 'bg-yellow-400/80' :
+    'bg-emerald-400/80'
+
+  return (
+    <div className="space-y-1">
       <div className="flex justify-between items-center text-xs">
         <span className="text-muted-foreground font-medium">{label}</span>
         <span className={`font-bold tabular-nums ${pct >= 90 ? 'text-red-500' : pct >= 70 ? 'text-yellow-600' : ''}`}>
           {value !== null ? `${pct}%` : '-'}
         </span>
       </div>
-      <div className="h-3 w-full rounded-full bg-muted overflow-hidden">
-        <div
-          className={`h-full rounded-full transition-all ${color} ${danger && pct >= 90 ? 'animate-pulse' : ''}`}
-          style={{ width: `${Math.min(pct, 100)}%` }}
-        />
+
+      {/* 7칸 그리드 */}
+      <div className="flex gap-0.5">
+        {Array.from({ length: 7 }, (_, i) => {
+          const timeFill = i < daysPassed ? 100 : i === daysPassed ? dayFraction * 100 : 0
+          const usageFill = Math.max(0, Math.min(100, (pct - i * cellWidth) / cellWidth * 100))
+          const isCurrent = i === daysPassed
+
+          return (
+            <div
+              key={i}
+              className={`flex-1 relative h-7 rounded-sm bg-muted overflow-hidden ${isCurrent ? 'ring-1 ring-primary/60' : ''}`}
+            >
+              {/* 시간 경과 (회색) */}
+              <div
+                className="absolute inset-y-0 left-0 bg-slate-300/60 dark:bg-slate-600/50"
+                style={{ width: `${timeFill}%` }}
+              />
+              {/* 사용량 (컬러) */}
+              <div
+                className={`absolute inset-y-0 left-0 ${fillColor}`}
+                style={{ width: `${usageFill}%` }}
+              />
+              {/* 날짜 레이블 */}
+              <span className={`absolute inset-0 flex items-center justify-center text-[9px] font-semibold z-10 ${isCurrent ? 'text-primary' : 'text-muted-foreground'}`}>
+                {i + 1}
+              </span>
+            </div>
+          )
+        })}
       </div>
+
       {resetAt && (
         <p className="text-[10px] text-muted-foreground text-right">{resetLabel(resetAt)}</p>
       )}
@@ -98,18 +204,17 @@ export function AccountCard({ account }: { account: AccountLatest }) {
       <CardContent className="space-y-3">
         {latest ? (
           <>
-            <UsageBar
-              label="5시간 윈도우"
+            <Segmented5hBar
               value={latest.utilization5h}
               resetAt={latest.resetAt5h}
               danger
             />
-            <UsageBar
+            <Grid7dBar
               label="7일 (전체)"
               value={latest.utilization7d}
               resetAt={latest.resetAt7d}
             />
-            <UsageBar
+            <Grid7dBar
               label="7일 (Sonnet)"
               value={latest.utilization7dSonnet}
               resetAt={latest.resetAt7dSonnet}
