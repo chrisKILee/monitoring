@@ -32,9 +32,16 @@ async function runCollect() {
     where: { isActive: true },
   })
 
-  const results = await Promise.allSettled(
-    accounts.map(account => collectAccount(account))
-  )
+  // 동시 요청 시 Claude.ai 세션 충돌 방지 — 순차 실행 + 3초 간격
+  const results: PromiseSettledResult<void>[] = []
+  for (let i = 0; i < accounts.length; i++) {
+    if (i > 0) await new Promise(r => setTimeout(r, 3000))
+    results.push(
+      await collectAccount(accounts[i])
+        .then(() => ({ status: 'fulfilled' as const, value: undefined }))
+        .catch((reason) => ({ status: 'rejected' as const, reason }))
+    )
+  }
 
   const collected = results.filter(r => r.status === 'fulfilled').length
   const errors = results
