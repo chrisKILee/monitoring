@@ -34,6 +34,19 @@ model UsageLog {
 
   rawResponse Json
 
+  // 5시간 윈도우
+  utilization5h Int?       // 0-100 %
+  resetAt5h     DateTime?
+
+  // 7일 윈도우
+  utilization7d       Int?       // 0-100 %
+  resetAt7d           DateTime?
+
+  // 7일 Sonnet 윈도우
+  utilization7dSonnet Int?       // 0-100 %
+  resetAt7dSonnet     DateTime?
+
+  // 하위 호환 (기존 필드 유지)
   usedMessages  Int?
   totalMessages Int?
   usagePercent  Float?

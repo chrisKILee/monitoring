@@ -17,11 +17,12 @@ async function getLatestUsage(): Promise<AccountLatest[]> {
         orderBy: { fetchedAt: 'desc' },
         take: 1,
         select: {
-          usedMessages: true,
-          totalMessages: true,
-          usagePercent: true,
-          expiresAt: true,
-          planName: true,
+          utilization5h: true,
+          resetAt5h: true,
+          utilization7d: true,
+          resetAt7d: true,
+          utilization7dSonnet: true,
+          resetAt7dSonnet: true,
           predictExceed5h: true,
           predictExceed7d: true,
           fetchedAt: true,
@@ -47,11 +48,7 @@ export default async function DashboardPage() {
   const danger = accounts.filter(a => a.latest?.predictExceed5h).length
   const warning = accounts.filter(a => !a.latest?.predictExceed5h && a.latest?.predictExceed7d).length
   const errored = accounts.filter(a => a.lastError).length
-  const expiringSoon = accounts.filter(a => {
-    if (!a.latest?.expiresAt) return false
-    const days = (new Date(a.latest.expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
-    return days >= 0 && days < 7
-  }).length
+  const noData = accounts.filter(a => !a.lastError && !a.latest).length
 
   return (
     <div className="container mx-auto px-4 py-6 space-y-6">
@@ -68,9 +65,9 @@ export default async function DashboardPage() {
       {/* 요약 카드 */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         <SummaryCard label="전체 계정" value={total} />
-        <SummaryCard label="위험" value={danger} color="text-destructive" />
-        <SummaryCard label="주의" value={warning} color="text-yellow-600" />
-        <SummaryCard label="만료 임박" value={expiringSoon} color="text-orange-600" />
+        <SummaryCard label="위험 (5h≥90%)" value={danger} color="text-destructive" />
+        <SummaryCard label="주의 (7d≥90%)" value={warning} color="text-yellow-600" />
+        <SummaryCard label="미수집" value={noData} color="text-muted-foreground" />
         <SummaryCard label="오류" value={errored} color="text-destructive" />
       </div>
 

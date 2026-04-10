@@ -2,8 +2,10 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { fetchUsage, CookieExpiredError } from '@/lib/claude-api'
 import { decrypt } from '@/lib/crypto'
-import { predict, isExpiringSoon } from '@/lib/prediction'
+import { isExpiringSoon } from '@/lib/prediction'
 import { sendAlert } from '@/lib/alert'
+
+const EXCEED_THRESHOLD = 90  // utilization % 기준
 
 function validateSecret(req: Request): boolean {
   const headerSecret = req.headers.get('x-cron-secret')
@@ -62,35 +64,29 @@ async function collectAccount(account: {
     const cookiesJson = decrypt(account.encryptedCookies)
     const usage = await fetchUsage(account.orgId, cookiesJson)
 
-    // 최근 스냅샷 조회 (예측용)
-    const recentLogs = await prisma.usageLog.findMany({
-      where: { accountId: account.id },
-      orderBy: { fetchedAt: 'desc' },
-      take: 12,
-    })
-
-    const snapshots = recentLogs
-      .filter(l => l.usedMessages !== null && l.totalMessages !== null)
-      .map(l => ({
-        usedMessages: l.usedMessages!,
-        totalMessages: l.totalMessages!,
-        fetchedAt: l.fetchedAt,
-      }))
-
-    const prediction = predict(snapshots)
+    // utilization 기반 예측 (5h/7d 윈도우 utilization >= 90% 이면 초과 예상)
+    const predictExceed5h = (usage.utilization5h ?? 0) >= EXCEED_THRESHOLD
+    const predictExceed7d = (usage.utilization7d ?? 0) >= EXCEED_THRESHOLD
 
     await prisma.usageLog.create({
       data: {
         accountId: account.id,
         rawResponse: usage.rawResponse as object,
+        utilization5h: usage.utilization5h,
+        resetAt5h: usage.resetAt5h,
+        utilization7d: usage.utilization7d,
+        resetAt7d: usage.resetAt7d,
+        utilization7dSonnet: usage.utilization7dSonnet,
+        resetAt7dSonnet: usage.resetAt7dSonnet,
+        // 하위 호환 필드
         usedMessages: usage.usedMessages,
         totalMessages: usage.totalMessages,
         usagePercent: usage.usagePercent,
         expiresAt: usage.expiresAt,
         planName: usage.planName,
         resetAt: usage.resetAt,
-        predictExceed5h: prediction.predictExceed5h,
-        predictExceed7d: prediction.predictExceed7d,
+        predictExceed5h,
+        predictExceed7d,
       },
     })
 
@@ -99,16 +95,15 @@ async function collectAccount(account: {
       data: {
         lastFetchedAt: new Date(),
         lastError: null,
-        // Set-Cookie에서 파싱된 실제 만료일이 있으면 업데이트
         ...(usage.cookieExpiresAt && { cookieExpiresAt: usage.cookieExpiresAt }),
       },
     })
 
     // 알람 판단
-    if (prediction.predictExceed5h) {
-      await sendAlert(account.id, account.name, 'EXCEED_5H', '현재 속도로 5시간 내 쿼터 초과 예상')
-    } else if (prediction.predictExceed7d) {
-      await sendAlert(account.id, account.name, 'EXCEED_7D', '현재 속도로 7일 내 쿼터 초과 예상')
+    if (predictExceed5h) {
+      await sendAlert(account.id, account.name, 'EXCEED_5H', `5시간 윈도우 사용량 ${usage.utilization5h}% (90% 초과)`)
+    } else if (predictExceed7d) {
+      await sendAlert(account.id, account.name, 'EXCEED_7D', `7일 윈도우 사용량 ${usage.utilization7d}% (90% 초과)`)
     }
 
     if (usage.expiresAt && isExpiringSoon(usage.expiresAt)) {

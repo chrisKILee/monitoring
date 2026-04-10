@@ -17,23 +17,44 @@ afterEach(() => {
 })
 
 describe('fetchUsage', () => {
-  it('정상 응답을 파싱하여 UsageResponse를 반환해야 한다', async () => {
+  it('실제 API 응답(five_hour/seven_day)을 파싱해야 한다', async () => {
     mockFetch(200, {
-      used_messages: 350,
-      total_messages: 1000,
-      plan: 'Pro',
-      expires_at: '2026-05-01T00:00:00.000Z',
-      reset_at: '2026-04-30T00:00:00.000Z',
+      five_hour: { utilization: 7, resets_at: '2026-04-10T18:00:00.000Z' },
+      seven_day: { utilization: 36, resets_at: '2026-04-14T08:00:00.000Z' },
+      seven_day_sonnet: { utilization: 27, resets_at: '2026-04-15T00:00:00.000Z' },
+      extra_usage: { is_enabled: true, used_credits: 0, monthly_limit: 2000 },
     })
 
     const result = await fetchUsage(ORG_ID, COOKIES_JSON)
 
-    expect(result.usedMessages).toBe(350)
-    expect(result.totalMessages).toBe(1000)
-    expect(result.usagePercent).toBe(35)
-    expect(result.planName).toBe('Pro')
-    expect(result.expiresAt).toEqual(new Date('2026-05-01T00:00:00.000Z'))
+    expect(result.utilization5h).toBe(7)
+    expect(result.resetAt5h).toEqual(new Date('2026-04-10T18:00:00.000Z'))
+    expect(result.utilization7d).toBe(36)
+    expect(result.resetAt7d).toEqual(new Date('2026-04-14T08:00:00.000Z'))
+    expect(result.utilization7dSonnet).toBe(27)
+    expect(result.resetAt7dSonnet).toEqual(new Date('2026-04-15T00:00:00.000Z'))
     expect(result.rawResponse).toBeDefined()
+  })
+
+  it('seven_day_sonnet가 null이면 utilization7dSonnet은 null이어야 한다', async () => {
+    mockFetch(200, {
+      five_hour: { utilization: 5, resets_at: '2026-04-10T18:00:00.000Z' },
+      seven_day: { utilization: 40, resets_at: '2026-04-14T08:00:00.000Z' },
+      seven_day_sonnet: null,
+    })
+
+    const result = await fetchUsage(ORG_ID, COOKIES_JSON)
+
+    expect(result.utilization7dSonnet).toBeNull()
+    expect(result.resetAt7dSonnet).toBeNull()
+  })
+
+  it('빈 응답이어도 rawResponse는 항상 반환해야 한다', async () => {
+    mockFetch(200, { unknown_field: 'value' })
+    const result = await fetchUsage(ORG_ID, COOKIES_JSON)
+    expect(result.rawResponse).toEqual({ unknown_field: 'value' })
+    expect(result.utilization5h).toBeNull()
+    expect(result.utilization7d).toBeNull()
   })
 
   it('401 응답은 CookieExpiredError를 던져야 한다', async () => {
@@ -51,14 +72,6 @@ describe('fetchUsage', () => {
     await expect(fetchUsage(ORG_ID, COOKIES_JSON)).rejects.toThrow(ClaudeFetchError)
   })
 
-  it('알 수 없는 필드가 있어도 rawResponse는 항상 반환해야 한다', async () => {
-    mockFetch(200, { unknown_field: 'value', another: 42 })
-    const result = await fetchUsage(ORG_ID, COOKIES_JSON)
-    expect(result.rawResponse).toEqual({ unknown_field: 'value', another: 42 })
-    expect(result.usedMessages).toBeNull()
-    expect(result.totalMessages).toBeNull()
-  })
-
   it('올바른 URL과 쿠키 헤더로 fetch를 호출해야 한다', async () => {
     mockFetch(200, {})
     await fetchUsage(ORG_ID, COOKIES_JSON)
@@ -71,11 +84,5 @@ describe('fetchUsage', () => {
         }),
       })
     )
-  })
-
-  it('usagePercent를 소수점 1자리로 반환해야 한다', async () => {
-    mockFetch(200, { used_messages: 1, total_messages: 3 })
-    const result = await fetchUsage(ORG_ID, COOKIES_JSON)
-    expect(result.usagePercent).toBe(33.3)
   })
 })

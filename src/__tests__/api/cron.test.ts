@@ -84,13 +84,20 @@ describe('POST /api/cron/collect', () => {
       { id: 'acc-1', name: '테스트계정', orgId: 'org-1', encryptedCookies: '{}' },
     ])
     mockFetchUsage.mockResolvedValue({
-      usedMessages: 300,
-      totalMessages: 1000,
-      usagePercent: 30,
-      expiresAt: new Date('2026-06-01'),
-      planName: 'Pro',
+      utilization5h: 30,
+      resetAt5h: new Date('2026-04-10T18:00:00Z'),
+      utilization7d: 50,
+      resetAt7d: new Date('2026-04-14T08:00:00Z'),
+      utilization7dSonnet: 20,
+      resetAt7dSonnet: new Date('2026-04-15T00:00:00Z'),
+      usedMessages: null,
+      totalMessages: null,
+      usagePercent: null,
+      expiresAt: null,
+      planName: null,
       resetAt: null,
       rawResponse: {},
+      cookieExpiresAt: null,
     })
     ;(mockPrisma.usageLog.findMany as jest.Mock).mockResolvedValue([])
     ;(mockPrisma.usageLog.create as jest.Mock).mockResolvedValue({})

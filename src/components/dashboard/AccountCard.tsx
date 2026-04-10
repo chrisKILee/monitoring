@@ -2,7 +2,6 @@
 
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Progress } from '@/components/ui/progress'
 
 export interface AccountLatest {
   id: string
@@ -11,11 +10,12 @@ export interface AccountLatest {
   lastFetchedAt: string | null
   lastError: string | null
   latest: {
-    usedMessages: number | null
-    totalMessages: number | null
-    usagePercent: number | null
-    expiresAt: string | null
-    planName: string | null
+    utilization5h: number | null
+    resetAt5h: string | null
+    utilization7d: number | null
+    resetAt7d: string | null
+    utilization7dSonnet: number | null
+    resetAt7dSonnet: string | null
     predictExceed5h: boolean
     predictExceed7d: boolean
     fetchedAt: string
@@ -30,71 +30,101 @@ function StatusBadge({ account }: { account: AccountLatest }) {
   return <Badge className="bg-green-500 text-white">정상</Badge>
 }
 
-function ExpiryBadge({ expiresAt }: { expiresAt: string | null }) {
-  if (!expiresAt) return null
-  const days = Math.ceil((new Date(expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
-  if (days < 0) return <Badge variant="destructive">만료됨</Badge>
-  if (days <= 7) return <Badge variant="destructive">만료 {days}일 전</Badge>
-  if (days <= 30) return <Badge className="bg-yellow-500 text-white">만료 {days}일 전</Badge>
-  return null
+function resetLabel(resetAt: string | null): string {
+  if (!resetAt) return ''
+  const d = new Date(resetAt)
+  const diff = d.getTime() - Date.now()
+  if (diff <= 0) return '곧 초기화'
+  const h = Math.floor(diff / 3_600_000)
+  const m = Math.floor((diff % 3_600_000) / 60_000)
+  if (h >= 24) {
+    const days = Math.floor(h / 24)
+    return `${days}일 후 초기화`
+  }
+  if (h > 0) return `${h}h ${m}m 후 초기화`
+  return `${m}m 후 초기화`
+}
+
+function UsageBar({
+  label,
+  value,
+  resetAt,
+  danger,
+}: {
+  label: string
+  value: number | null
+  resetAt: string | null
+  danger?: boolean
+}) {
+  const pct = value ?? 0
+  const color =
+    pct >= 90 ? 'bg-red-500' :
+    pct >= 70 ? 'bg-yellow-500' :
+    'bg-emerald-500'
+
+  return (
+    <div className="space-y-0.5">
+      <div className="flex justify-between items-center text-xs">
+        <span className="text-muted-foreground font-medium">{label}</span>
+        <span className={`font-bold tabular-nums ${pct >= 90 ? 'text-red-500' : pct >= 70 ? 'text-yellow-600' : ''}`}>
+          {value !== null ? `${pct}%` : '-'}
+        </span>
+      </div>
+      <div className="h-3 w-full rounded-full bg-muted overflow-hidden">
+        <div
+          className={`h-full rounded-full transition-all ${color} ${danger && pct >= 90 ? 'animate-pulse' : ''}`}
+          style={{ width: `${Math.min(pct, 100)}%` }}
+        />
+      </div>
+      {resetAt && (
+        <p className="text-[10px] text-muted-foreground text-right">{resetLabel(resetAt)}</p>
+      )}
+    </div>
+  )
 }
 
 export function AccountCard({ account }: { account: AccountLatest }) {
   const latest = account.latest
-  const percent = latest?.usagePercent ?? 0
 
   return (
     <Card className="hover:shadow-md transition-shadow">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between gap-2">
           <CardTitle className="text-base truncate">{account.name}</CardTitle>
-          <div className="flex gap-1 shrink-0">
-            <StatusBadge account={account} />
-            {latest && <ExpiryBadge expiresAt={latest.expiresAt} />}
-          </div>
+          <StatusBadge account={account} />
         </div>
         <p className="text-xs text-muted-foreground font-mono truncate">{account.orgId}</p>
       </CardHeader>
       <CardContent className="space-y-3">
         {latest ? (
           <>
-            <div className="space-y-1">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">사용량</span>
-                <span className="font-medium">
-                  {latest.usedMessages?.toLocaleString() ?? '-'} /{' '}
-                  {latest.totalMessages?.toLocaleString() ?? '-'}
-                </span>
-              </div>
-              <Progress value={percent} className="h-2" />
-              <p className="text-right text-xs text-muted-foreground">{percent.toFixed(1)}%</p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <div>
-                <p className="text-muted-foreground">플랜</p>
-                <p className="font-medium">{latest.planName ?? '-'}</p>
-              </div>
-              <div>
-                <p className="text-muted-foreground">만료일</p>
-                <p className="font-medium">
-                  {latest.expiresAt
-                    ? new Date(latest.expiresAt).toLocaleDateString('ko-KR')
-                    : '-'}
-                </p>
-              </div>
-            </div>
+            <UsageBar
+              label="5시간 윈도우"
+              value={latest.utilization5h}
+              resetAt={latest.resetAt5h}
+              danger
+            />
+            <UsageBar
+              label="7일 (전체)"
+              value={latest.utilization7d}
+              resetAt={latest.resetAt7d}
+            />
+            <UsageBar
+              label="7일 (Sonnet)"
+              value={latest.utilization7dSonnet}
+              resetAt={latest.resetAt7dSonnet}
+            />
 
             {(latest.predictExceed5h || latest.predictExceed7d) && (
               <div className="rounded-md bg-destructive/10 p-2 text-xs text-destructive">
                 {latest.predictExceed5h
-                  ? '⚠ 5시간 내 쿼터 초과 예상'
-                  : '⚠ 7일 내 쿼터 초과 예상'}
+                  ? '⚠ 5시간 윈도우 90% 초과'
+                  : '⚠ 7일 윈도우 90% 초과'}
               </div>
             )}
 
-            <p className="text-xs text-muted-foreground">
-              수집: {new Date(latest.fetchedAt).toLocaleString('ko-KR')}
+            <p className="text-xs text-muted-foreground text-right">
+              {new Date(latest.fetchedAt).toLocaleString('ko-KR')}
             </p>
           </>
         ) : (
