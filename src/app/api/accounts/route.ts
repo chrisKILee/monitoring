@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { encrypt } from '@/lib/crypto'
+import { encrypt, decrypt } from '@/lib/crypto'
 
 export async function GET() {
   const accounts = await prisma.account.findMany({
@@ -11,13 +11,24 @@ export async function GET() {
       orgId: true,
       isActive: true,
       cookieExpiresAt: true,
+      encryptedCookies: true,
       lastFetchedAt: true,
       lastError: true,
       createdAt: true,
       updatedAt: true,
     },
   })
-  return NextResponse.json({ data: accounts })
+
+  const data = accounts.map(({ encryptedCookies, ...acc }) => {
+    let deviceId: string | null = null
+    try {
+      const parsed = JSON.parse(decrypt(encryptedCookies)) as Record<string, string>
+      deviceId = parsed['anthropic-device-id'] ?? null
+    } catch { /* 복호화 실패 시 null */ }
+    return { ...acc, deviceId }
+  })
+
+  return NextResponse.json({ data })
 }
 
 /** raw cookie string(a=b; c=d) 파싱 */

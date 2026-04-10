@@ -1,19 +1,43 @@
+export const dynamic = 'force-dynamic'
+
 import { AccountCard, type AccountLatest } from '@/components/dashboard/AccountCard'
-import { Badge } from '@/components/ui/badge'
 import Link from 'next/link'
+import { prisma } from '@/lib/prisma'
 
 async function getLatestUsage(): Promise<AccountLatest[]> {
-  try {
-    const baseUrl = process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
-      : 'http://localhost:3000'
-    const res = await fetch(`${baseUrl}/api/usage/latest`, { cache: 'no-store' })
-    if (!res.ok) return []
-    const json = await res.json() as { data: AccountLatest[] }
-    return json.data
-  } catch {
-    return []
-  }
+  const accounts = await prisma.account.findMany({
+    where: { isActive: true },
+    select: {
+      id: true,
+      name: true,
+      orgId: true,
+      lastFetchedAt: true,
+      lastError: true,
+      usageLogs: {
+        orderBy: { fetchedAt: 'desc' },
+        take: 1,
+        select: {
+          usedMessages: true,
+          totalMessages: true,
+          usagePercent: true,
+          expiresAt: true,
+          planName: true,
+          predictExceed5h: true,
+          predictExceed7d: true,
+          fetchedAt: true,
+        },
+      },
+    },
+  })
+
+  return accounts.map(acc => ({
+    id: acc.id,
+    name: acc.name,
+    orgId: acc.orgId,
+    lastFetchedAt: acc.lastFetchedAt,
+    lastError: acc.lastError,
+    latest: acc.usageLogs[0] ?? null,
+  })) as unknown as AccountLatest[]
 }
 
 export default async function DashboardPage() {

@@ -14,6 +14,7 @@ interface Account {
   cookieExpiresAt: string | null
   lastFetchedAt: string | null
   lastError: string | null
+  deviceId: string | null
 }
 
 function CookieExpiry({ expiresAt }: { expiresAt: string | null }) {
@@ -90,6 +91,7 @@ export default function AccountsPage() {
                 <th className="text-left p-3 font-medium">이름</th>
                 <th className="text-left p-3 font-medium hidden md:table-cell">Organization ID</th>
                 <th className="text-left p-3 font-medium">상태</th>
+                <th className="text-left p-3 font-medium hidden lg:table-cell">Device ID</th>
                 <th className="text-left p-3 font-medium hidden md:table-cell">쿠키 만료</th>
                 <th className="text-left p-3 font-medium hidden md:table-cell">마지막 수집</th>
                 <th className="text-right p-3 font-medium">액션</th>
@@ -108,6 +110,9 @@ export default function AccountsPage() {
                       : acc.isActive
                         ? <Badge className="bg-green-500 text-white">활성</Badge>
                         : <Badge variant="secondary">비활성</Badge>}
+                  </td>
+                  <td className="p-3 font-mono text-xs text-muted-foreground hidden lg:table-cell">
+                    {acc.deviceId ? acc.deviceId.slice(0, 8) + '…' : '-'}
                   </td>
                   <td className="p-3 text-xs hidden md:table-cell">
                     <CookieExpiry expiresAt={acc.cookieExpiresAt} />
