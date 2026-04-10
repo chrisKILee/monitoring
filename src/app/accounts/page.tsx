@@ -11,8 +11,19 @@ interface Account {
   name: string
   orgId: string
   isActive: boolean
+  cookieExpiresAt: string | null
   lastFetchedAt: string | null
   lastError: string | null
+}
+
+function CookieExpiry({ expiresAt }: { expiresAt: string | null }) {
+  if (!expiresAt) return <span className="text-muted-foreground">-</span>
+  const date = new Date(expiresAt)
+  const daysLeft = Math.ceil((date.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+  const label = date.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })
+  if (daysLeft <= 0) return <span className="text-destructive font-medium">만료됨</span>
+  if (daysLeft <= 7) return <span className="text-orange-500 font-medium">{label} ({daysLeft}일 남음)</span>
+  return <span className="text-muted-foreground">{label} ({daysLeft}일)</span>
 }
 
 export default function AccountsPage() {
@@ -79,6 +90,7 @@ export default function AccountsPage() {
                 <th className="text-left p-3 font-medium">이름</th>
                 <th className="text-left p-3 font-medium hidden md:table-cell">Organization ID</th>
                 <th className="text-left p-3 font-medium">상태</th>
+                <th className="text-left p-3 font-medium hidden md:table-cell">쿠키 만료</th>
                 <th className="text-left p-3 font-medium hidden md:table-cell">마지막 수집</th>
                 <th className="text-right p-3 font-medium">액션</th>
               </tr>
@@ -96,6 +108,9 @@ export default function AccountsPage() {
                       : acc.isActive
                         ? <Badge className="bg-green-500 text-white">활성</Badge>
                         : <Badge variant="secondary">비활성</Badge>}
+                  </td>
+                  <td className="p-3 text-xs hidden md:table-cell">
+                    <CookieExpiry expiresAt={acc.cookieExpiresAt} />
                   </td>
                   <td className="p-3 text-xs text-muted-foreground hidden md:table-cell">
                     {acc.lastFetchedAt
