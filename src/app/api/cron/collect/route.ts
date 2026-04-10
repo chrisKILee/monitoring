@@ -8,8 +8,9 @@ import { sendAlert } from '@/lib/alert'
 function validateSecret(req: Request): boolean {
   const headerSecret = req.headers.get('x-cron-secret')
   const urlSecret = new URL(req.url).searchParams.get('secret')
-  const expected = process.env.CRON_SECRET
-  return (headerSecret === expected) || (urlSecret === expected)
+  const expected = process.env.CRON_SECRET?.trim()
+  if (!expected) return false
+  return (headerSecret?.trim() === expected) || (urlSecret?.trim() === expected)
 }
 
 export async function GET(req: Request) {
