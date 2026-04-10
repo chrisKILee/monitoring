@@ -1,0 +1,60 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Account {
+  id               String    @id @default(cuid())
+  name             String
+  orgId            String    @unique
+  encryptedCookies String
+  isActive         Boolean   @default(true)
+  lastFetchedAt    DateTime?
+  lastError        String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  usageLogs UsageLog[]
+  alertLogs AlertLog[]
+}
+
+model UsageLog {
+  id        String  @id @default(cuid())
+  accountId String
+  account   Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  rawResponse Json
+
+  usedMessages  Int?
+  totalMessages Int?
+  usagePercent  Float?
+  expiresAt     DateTime?
+  planName      String?
+  resetAt       DateTime?
+
+  predictExceed5h Boolean @default(false)
+  predictExceed7d Boolean @default(false)
+
+  fetchedAt DateTime @default(now())
+
+  @@index([accountId, fetchedAt(sort: Desc)])
+}
+
+model AlertLog {
+  id        String   @id @default(cuid())
+  accountId String
+  account   Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  alertType String
+  message   String
+  sentAt    DateTime @default(now())
+
+  @@index([accountId, sentAt(sort: Desc)])
+}
