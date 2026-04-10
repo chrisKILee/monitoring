@@ -39,7 +39,10 @@ function parseCookieInput(input: string): { cookies: Record<string, string>; org
 
   // curl 명령어: -b '...' 또는 --cookie '...' 에서 쿠키 추출
   if (trimmed.startsWith('curl')) {
-    const cookieMatch = trimmed.match(/(?:-b|--cookie)\s+['"]([^'"]+)['"]/)
+    // 단따옴표 우선, 쿠키값 안에 큰따옴표가 있을 수 있으므로 [^'] 사용
+    const cookieMatch =
+      trimmed.match(/(?:-b|--cookie)\s+'([^']+)'/) ||
+      trimmed.match(/(?:-b|--cookie)\s+"([^"]+)"/)
     if (!cookieMatch) return null
     const cookies = parseCookieString(cookieMatch[1])
     // URL에서 orgId 추출

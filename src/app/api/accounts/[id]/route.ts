@@ -1,8 +1,34 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { encrypt } from '@/lib/crypto'
+import { encrypt, decrypt } from '@/lib/crypto'
 import { fetchUsage } from '@/lib/claude-api'
-import { decrypt } from '@/lib/crypto'
+
+/** raw cookie string 또는 curl 명령어를 JSON 문자열로 정규화 */
+function normalizeCookies(input: string): string | null {
+  const trimmed = input.trim()
+  if (trimmed.startsWith('{')) return trimmed  // 이미 JSON
+  if (trimmed.startsWith('curl')) {
+    const m = trimmed.match(/(?:-b|--cookie)\s+'([^']+)'/) ||
+              trimmed.match(/(?:-b|--cookie)\s+"([^"]+)"/)
+    if (!m) return null
+    return JSON.stringify(parseCookieStr(m[1]))
+  }
+  // raw cookie string
+  const parsed = parseCookieStr(trimmed)
+  return Object.keys(parsed).length > 0 ? JSON.stringify(parsed) : null
+}
+
+function parseCookieStr(s: string): Record<string, string> {
+  const r: Record<string, string> = {}
+  for (const part of s.split(';')) {
+    const idx = part.indexOf('=')
+    if (idx === -1) continue
+    const k = part.slice(0, idx).trim()
+    const v = part.slice(idx + 1).trim()
+    if (k) r[k] = v
+  }
+  return r
+}
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -22,7 +48,11 @@ export async function PUT(req: Request, { params }: Params) {
     where: { id },
     data: {
       ...(body.name && { name: body.name }),
-      ...(body.cookiesJson && { encryptedCookies: encrypt(body.cookiesJson) }),
+      ...(body.cookiesJson && (() => {
+        const normalized = normalizeCookies(body.cookiesJson!)
+        if (!normalized) throw new Error('쿠키 형식이 올바르지 않습니다')
+        return { encryptedCookies: encrypt(normalized) }
+      })()),
       ...(body.isActive !== undefined && { isActive: body.isActive }),
     },
     select: { id: true, name: true, orgId: true, isActive: true, updatedAt: true },
