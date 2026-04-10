@@ -73,7 +73,7 @@ export function AccountForm({ open, onClose, onSuccess, account }: Props) {
             <Label htmlFor="cookies">쿠키 JSON {isEdit && <span className="text-muted-foreground">(변경 시에만 입력)</span>}</Label>
             <Textarea id="cookies" value={cookiesJson} onChange={e => setCookiesJson(e.target.value)}
               placeholder={'F12 → Network → 아무 요청 클릭 → Request Headers → cookie: 값 전체 복사'}
-              rows={5} className="font-mono text-xs" required={!isEdit} />
+              rows={5} className="font-mono text-xs resize-none overflow-x-hidden break-all" required={!isEdit} />
             <p className="text-xs text-muted-foreground">
               F12 → Network 탭 → claude.ai 요청 클릭 → Request Headers → <code>cookie</code> 값 전체 붙여넣기
             </p>
