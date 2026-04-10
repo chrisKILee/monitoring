@@ -89,7 +89,12 @@ async function collectAccount(account: {
 
     await prisma.account.update({
       where: { id: account.id },
-      data: { lastFetchedAt: new Date(), lastError: null },
+      data: {
+        lastFetchedAt: new Date(),
+        lastError: null,
+        // Set-Cookie에서 파싱된 실제 만료일이 있으면 업데이트
+        ...(usage.cookieExpiresAt && { cookieExpiresAt: usage.cookieExpiresAt }),
+      },
     })
 
     // 알람 판단

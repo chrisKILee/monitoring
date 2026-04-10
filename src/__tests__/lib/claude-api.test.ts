@@ -8,7 +8,8 @@ function mockFetch(status: number, body: unknown) {
     ok: status >= 200 && status < 300,
     status,
     json: async () => body,
-  } as Response)
+    headers: { get: () => null, getSetCookie: () => [] },
+  } as unknown as Response)
 }
 
 afterEach(() => {

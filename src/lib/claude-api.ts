@@ -20,6 +20,7 @@ export interface UsageResponse {
   planName: string | null
   resetAt: Date | null
   rawResponse: Record<string, unknown>
+  cookieExpiresAt: Date | null  // Set-Cookie 헤더에서 파싱한 sessionKey 만료일
 }
 
 export async function fetchUsage(
@@ -54,8 +55,31 @@ export async function fetchUsage(
   }
 
   const raw = (await res.json()) as Record<string, unknown>
+  const cookieExpiresAt = parseSessionKeyExpiry(res.headers)
 
-  return parseUsageResponse(raw)
+  return { ...parseUsageResponse(raw), cookieExpiresAt }
+}
+
+/** Set-Cookie 헤더에서 sessionKey의 Expires를 파싱 */
+function parseSessionKeyExpiry(headers: Headers): Date | null {
+  // Node.js fetch는 Set-Cookie를 getSetCookie() 또는 get('set-cookie')로 접근
+  const setCookies: string[] = []
+  if (typeof (headers as { getSetCookie?: () => string[] }).getSetCookie === 'function') {
+    setCookies.push(...(headers as { getSetCookie: () => string[] }).getSetCookie())
+  } else {
+    const raw = headers.get('set-cookie')
+    if (raw) setCookies.push(raw)
+  }
+
+  for (const cookie of setCookies) {
+    if (!cookie.toLowerCase().includes('sessionkey')) continue
+    const expiresMatch = cookie.match(/expires=([^;]+)/i)
+    if (expiresMatch) {
+      const d = new Date(expiresMatch[1].trim())
+      if (!isNaN(d.getTime())) return d
+    }
+  }
+  return null
 }
 
 function parseUsageResponse(raw: Record<string, unknown>): UsageResponse {
