@@ -3,6 +3,22 @@
 import { useMemo } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts'
+
+export interface RecentLog {
+  fetchedAt: string
+  utilization5h: number | null
+  utilization7d: number | null
+}
 
 export interface AccountLatest {
   id: string
@@ -21,6 +37,7 @@ export interface AccountLatest {
     predictExceed7d: boolean
     fetchedAt: string
   } | null
+  recentLogs: RecentLog[]
 }
 
 function StatusBadge({ account }: { account: AccountLatest }) {
@@ -189,6 +206,79 @@ function Grid7dBar({
   )
 }
 
+function Usage48hChart({ logs }: { logs: RecentLog[] }) {
+  const data = logs.map(l => ({
+    time: new Date(l.fetchedAt).toLocaleString('ko-KR', {
+      month: 'numeric',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }),
+    '5h': l.utilization5h ?? null,
+    '7d': l.utilization7d ?? null,
+  }))
+
+  if (data.length < 2) {
+    return (
+      <div className="flex items-center justify-center h-24 text-xs text-muted-foreground">
+        데이터 부족 (수집 후 확인)
+      </div>
+    )
+  }
+
+  return (
+    <div>
+      <p className="text-xs text-muted-foreground font-medium mb-1">48시간 사용량 추세</p>
+      <ResponsiveContainer width="100%" height={110}>
+        <LineChart data={data} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted))" />
+          <XAxis
+            dataKey="time"
+            tick={{ fontSize: 9 }}
+            interval="preserveStartEnd"
+            tickLine={false}
+          />
+          <YAxis
+            domain={[0, 100]}
+            tick={{ fontSize: 9 }}
+            tickFormatter={v => `${v}%`}
+            tickLine={false}
+          />
+          <Tooltip
+            contentStyle={{ fontSize: 11 }}
+            formatter={(v: unknown) => typeof v === 'number' ? [`${v}%`] : ['-']}
+          />
+          <Legend
+            iconSize={8}
+            wrapperStyle={{ fontSize: 10, paddingTop: 2 }}
+          />
+          <Line
+            type="monotone"
+            dataKey="5h"
+            name="5h 윈도우"
+            stroke="hsl(var(--primary))"
+            strokeWidth={1.5}
+            dot={false}
+            activeDot={{ r: 3 }}
+            connectNulls
+          />
+          <Line
+            type="monotone"
+            dataKey="7d"
+            name="7d 윈도우"
+            stroke="hsl(var(--chart-2, 180 60% 50%))"
+            strokeWidth={1.5}
+            dot={false}
+            activeDot={{ r: 3 }}
+            connectNulls
+            strokeDasharray="4 2"
+          />
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
+  )
+}
+
 export function AccountCard({ account }: { account: AccountLatest }) {
   const latest = account.latest
 
@@ -219,6 +309,8 @@ export function AccountCard({ account }: { account: AccountLatest }) {
               value={latest.utilization7dSonnet}
               resetAt={latest.resetAt7dSonnet}
             />
+
+            <Usage48hChart logs={account.recentLogs} />
 
             {(latest.predictExceed5h || latest.predictExceed7d) && (
               <div className="rounded-md bg-destructive/10 p-2 text-xs text-destructive">

@@ -5,6 +5,8 @@ import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
 
 async function getLatestUsage(): Promise<AccountLatest[]> {
+  const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1000)
+
   const accounts = await prisma.account.findMany({
     where: { isActive: true },
     select: {
@@ -15,7 +17,8 @@ async function getLatestUsage(): Promise<AccountLatest[]> {
       lastError: true,
       usageLogs: {
         orderBy: { fetchedAt: 'desc' },
-        take: 1,
+        take: 10,
+        where: { fetchedAt: { gte: cutoff } },
         select: {
           utilization5h: true,
           resetAt5h: true,
@@ -38,6 +41,7 @@ async function getLatestUsage(): Promise<AccountLatest[]> {
     lastFetchedAt: acc.lastFetchedAt,
     lastError: acc.lastError,
     latest: acc.usageLogs[0] ?? null,
+    recentLogs: [...acc.usageLogs].reverse(),
   })) as unknown as AccountLatest[]
 }
 
@@ -80,7 +84,7 @@ export default async function DashboardPage() {
           </Link>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 gap-4">
           {accounts.map(account => (
             <AccountCard key={account.id} account={account} />
           ))}
