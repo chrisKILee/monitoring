@@ -17,7 +17,7 @@ async function getLatestUsage(): Promise<AccountLatest[]> {
       lastError: true,
       usageLogs: {
         orderBy: { fetchedAt: 'desc' },
-        take: 50,
+        take: 20,
         where: { fetchedAt: { gte: cutoff } },
         select: {
           utilization5h: true,
