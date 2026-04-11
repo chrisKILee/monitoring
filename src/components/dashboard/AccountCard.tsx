@@ -10,7 +10,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
 } from 'recharts'
 
@@ -207,16 +206,17 @@ function Grid7dBar({
 }
 
 function Usage48hChart({ logs }: { logs: RecentLog[] }) {
-  const data = logs.map(l => ({
-    time: new Date(l.fetchedAt).toLocaleString('ko-KR', {
-      month: 'numeric',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    }),
-    '5h': l.utilization5h ?? null,
-    '7d': l.utilization7d ?? null,
-  }))
+  const data = logs
+    .filter(l => l.utilization7d !== null)
+    .map(l => ({
+      time: new Date(l.fetchedAt).toLocaleString('ko-KR', {
+        month: 'numeric',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      }),
+      pct: l.utilization7d as number,
+    }))
 
   if (data.length < 2) {
     return (
@@ -228,10 +228,10 @@ function Usage48hChart({ logs }: { logs: RecentLog[] }) {
 
   return (
     <div>
-      <p className="text-xs text-muted-foreground font-medium mb-1">48시간 사용량 추세</p>
-      <ResponsiveContainer width="100%" height={110}>
+      <p className="text-xs text-muted-foreground font-medium mb-1">7일 사용량 추세 (48h)</p>
+      <ResponsiveContainer width="100%" height={120}>
         <LineChart data={data} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted))" />
+          <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.4} />
           <XAxis
             dataKey="time"
             tick={{ fontSize: 9 }}
@@ -246,32 +246,15 @@ function Usage48hChart({ logs }: { logs: RecentLog[] }) {
           />
           <Tooltip
             contentStyle={{ fontSize: 11 }}
-            formatter={(v: unknown) => typeof v === 'number' ? [`${v}%`] : ['-']}
-          />
-          <Legend
-            iconSize={8}
-            wrapperStyle={{ fontSize: 10, paddingTop: 2 }}
+            formatter={(v: unknown) => [`${v}%`, '7d 사용률']}
           />
           <Line
             type="monotone"
-            dataKey="5h"
-            name="5h 윈도우"
-            stroke="hsl(var(--primary))"
-            strokeWidth={1.5}
+            dataKey="pct"
+            stroke="#6366f1"
+            strokeWidth={2}
             dot={false}
-            activeDot={{ r: 3 }}
-            connectNulls
-          />
-          <Line
-            type="monotone"
-            dataKey="7d"
-            name="7d 윈도우"
-            stroke="hsl(var(--chart-2, 180 60% 50%))"
-            strokeWidth={1.5}
-            dot={false}
-            activeDot={{ r: 3 }}
-            connectNulls
-            strokeDasharray="4 2"
+            activeDot={{ r: 4 }}
           />
         </LineChart>
       </ResponsiveContainer>
