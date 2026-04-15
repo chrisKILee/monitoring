@@ -14,7 +14,9 @@ datasource db {
 model Account {
   id               String    @id @default(cuid())
   name             String
+  alias            String?
   orgId            String    @unique
+  sortOrder        Int       @default(0)
   encryptedCookies  String
   cookieExpiresAt   DateTime?
   isActive          Boolean   @default(true)

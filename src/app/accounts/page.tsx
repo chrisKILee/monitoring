@@ -9,7 +9,9 @@ import { CookieGuideDialog } from '@/components/accounts/CookieGuideDialog'
 interface Account {
   id: string
   name: string
+  alias: string | null
   orgId: string
+  sortOrder: number
   isActive: boolean
   cookieExpiresAt: string | null
   lastFetchedAt: string | null
@@ -33,6 +35,7 @@ export default function AccountsPage() {
   const [formOpen, setFormOpen] = useState(false)
   const [editTarget, setEditTarget] = useState<Account | undefined>()
   const [guideOpen, setGuideOpen] = useState(false)
+  const [syncingId, setSyncingId] = useState<string | null>(null)
 
   const fetchAccounts = useCallback(async () => {
     setLoading(true)
@@ -53,10 +56,36 @@ export default function AccountsPage() {
     fetchAccounts()
   }
 
-  async function handleTest(id: string) {
-    const res = await fetch(`/api/accounts/${id}`, { method: 'POST' })
-    const data = await res.json() as { data?: { success: boolean }; error?: { message: string } }
-    alert(res.ok ? '✅ 연결 성공!' : `❌ 실패: ${data.error?.message}`)
+  async function handleSync(id: string) {
+    setSyncingId(id)
+    try {
+      const res = await fetch(`/api/accounts/${id}/sync`, { method: 'POST' })
+      const data = await res.json() as { data?: { success: boolean }; error?: { message: string } }
+      if (!res.ok) {
+        alert(`❌ 동기화 실패: ${data.error?.message}`)
+      }
+      fetchAccounts()
+    } finally {
+      setSyncingId(null)
+    }
+  }
+
+  async function handleMove(index: number, direction: 'up' | 'down') {
+    const newAccounts = [...accounts]
+    const targetIndex = direction === 'up' ? index - 1 : index + 1
+    if (targetIndex < 0 || targetIndex >= newAccounts.length) return
+
+    const temp = newAccounts[index]
+    newAccounts[index] = newAccounts[targetIndex]
+    newAccounts[targetIndex] = temp
+
+    setAccounts(newAccounts)
+
+    await fetch('/api/accounts/reorder', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ order: newAccounts.map(a => a.id) }),
+    })
   }
 
   return (
@@ -88,7 +117,8 @@ export default function AccountsPage() {
           <table className="w-full text-sm">
             <thead className="bg-muted/50">
               <tr>
-                <th className="text-left p-3 font-medium">이름</th>
+                <th className="text-left p-3 font-medium w-12">순서</th>
+                <th className="text-left p-3 font-medium">표시명 / 별칭</th>
                 <th className="text-left p-3 font-medium hidden md:table-cell">Organization ID</th>
                 <th className="text-left p-3 font-medium">상태</th>
                 <th className="text-left p-3 font-medium hidden lg:table-cell">Device ID</th>
@@ -98,9 +128,36 @@ export default function AccountsPage() {
               </tr>
             </thead>
             <tbody>
-              {accounts.map(acc => (
+              {accounts.map((acc, index) => (
                 <tr key={acc.id} className="border-t hover:bg-muted/20">
-                  <td className="p-3 font-medium">{acc.name}</td>
+                  <td className="p-3">
+                    <div className="flex flex-col gap-0.5">
+                      <button
+                        className="text-muted-foreground hover:text-foreground disabled:opacity-30 leading-none text-base"
+                        onClick={() => handleMove(index, 'up')}
+                        disabled={index === 0}
+                        title="위로"
+                      >
+                        ▲
+                      </button>
+                      <button
+                        className="text-muted-foreground hover:text-foreground disabled:opacity-30 leading-none text-base"
+                        onClick={() => handleMove(index, 'down')}
+                        disabled={index === accounts.length - 1}
+                        title="아래로"
+                      >
+                        ▼
+                      </button>
+                    </div>
+                  </td>
+                  <td className="p-3">
+                    <div>
+                      <p className="font-medium">{acc.alias || acc.name}</p>
+                      {acc.alias && (
+                        <p className="text-xs text-muted-foreground">{acc.name}</p>
+                      )}
+                    </div>
+                  </td>
                   <td className="p-3 font-mono text-xs text-muted-foreground hidden md:table-cell truncate max-w-xs">
                     {acc.orgId}
                   </td>
@@ -124,8 +181,14 @@ export default function AccountsPage() {
                   </td>
                   <td className="p-3">
                     <div className="flex justify-end gap-1">
-                      <Button size="sm" variant="outline" onClick={() => handleTest(acc.id)}>
-                        테스트
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleSync(acc.id)}
+                        disabled={syncingId === acc.id}
+                        title="지금 동기화"
+                      >
+                        {syncingId === acc.id ? '...' : '↻'}
                       </Button>
                       <Button size="sm" variant="outline"
                         onClick={() => { setEditTarget(acc); setFormOpen(true) }}>

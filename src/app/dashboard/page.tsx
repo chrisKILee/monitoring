@@ -9,9 +9,11 @@ async function getLatestUsage(): Promise<AccountLatest[]> {
 
   const accounts = await prisma.account.findMany({
     where: { isActive: true },
+    orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
     select: {
       id: true,
       name: true,
+      alias: true,
       orgId: true,
       lastFetchedAt: true,
       lastError: true,
@@ -37,6 +39,7 @@ async function getLatestUsage(): Promise<AccountLatest[]> {
   return accounts.map(acc => ({
     id: acc.id,
     name: acc.name,
+    alias: acc.alias,
     orgId: acc.orgId,
     lastFetchedAt: acc.lastFetchedAt,
     lastError: acc.lastError,
@@ -84,7 +87,7 @@ export default async function DashboardPage() {
           </Link>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {accounts.map(account => (
             <AccountCard key={account.id} account={account} />
           ))}

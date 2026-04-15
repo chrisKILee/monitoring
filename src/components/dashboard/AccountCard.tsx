@@ -1,7 +1,9 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   LineChart,
@@ -22,6 +24,7 @@ export interface RecentLog {
 export interface AccountLatest {
   id: string
   name: string
+  alias: string | null
   orgId: string
   lastFetchedAt: string | null
   lastError: string | null
@@ -264,13 +267,38 @@ function Usage48hChart({ logs }: { logs: RecentLog[] }) {
 
 export function AccountCard({ account }: { account: AccountLatest }) {
   const latest = account.latest
+  const router = useRouter()
+  const [syncing, setSyncing] = useState(false)
+  const displayName = account.alias || account.name
+
+  async function handleSync() {
+    setSyncing(true)
+    try {
+      await fetch(`/api/accounts/${account.id}/sync`, { method: 'POST' })
+      router.refresh()
+    } finally {
+      setSyncing(false)
+    }
+  }
 
   return (
     <Card className="hover:shadow-md transition-shadow">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between gap-2">
-          <CardTitle className="text-base truncate">{account.name}</CardTitle>
-          <StatusBadge account={account} />
+          <CardTitle className="text-base truncate">{displayName}</CardTitle>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <StatusBadge account={account} />
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
+              onClick={handleSync}
+              disabled={syncing}
+              title="지금 동기화"
+            >
+              <span className={`text-sm ${syncing ? 'animate-spin inline-block' : ''}`}>↻</span>
+            </Button>
+          </div>
         </div>
         <p className="text-xs text-muted-foreground font-mono truncate">{account.orgId}</p>
       </CardHeader>

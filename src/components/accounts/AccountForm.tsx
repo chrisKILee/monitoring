@@ -11,12 +11,13 @@ interface Props {
   open: boolean
   onClose: () => void
   onSuccess: () => void
-  account?: { id: string; name: string; orgId: string }
+  account?: { id: string; name: string; alias: string | null; orgId: string }
 }
 
 export function AccountForm({ open, onClose, onSuccess, account }: Props) {
   const isEdit = Boolean(account)
   const [name, setName] = useState(account?.name ?? '')
+  const [alias, setAlias] = useState(account?.alias ?? '')
   const [cookiesJson, setCookiesJson] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -24,6 +25,7 @@ export function AccountForm({ open, onClose, onSuccess, account }: Props) {
   useEffect(() => {
     if (open) {
       setName(account?.name ?? '')
+      setAlias(account?.alias ?? '')
       setCookiesJson('')
       setError(null)
     }
@@ -42,7 +44,7 @@ export function AccountForm({ open, onClose, onSuccess, account }: Props) {
 
       const url = isEdit ? `/api/accounts/${account!.id}` : '/api/accounts'
       const method = isEdit ? 'PUT' : 'POST'
-      const body: Record<string, string> = { name }
+      const body: Record<string, string | null> = { name, alias: alias.trim() || null }
       if (!isEdit) body.cookiesJson = cookiesJson
       if (isEdit && cookiesJson.trim()) body.cookiesJson = cookiesJson
 
@@ -73,8 +75,20 @@ export function AccountForm({ open, onClose, onSuccess, account }: Props) {
 
         <form onSubmit={handleSubmit} className="space-y-4 overflow-y-auto flex-1 pr-1">
           <div className="space-y-1">
-            <Label htmlFor="name">계정 별칭</Label>
+            <Label htmlFor="name">계정 이름 <span className="text-xs text-muted-foreground">(내부 식별용)</span></Label>
             <Input id="name" value={name} onChange={e => setName(e.target.value)} placeholder="예: share01" required />
+          </div>
+
+          <div className="space-y-1">
+            <Label htmlFor="alias">
+              표시 별칭 <span className="text-xs text-muted-foreground">(선택 — 비우면 이름이 표시됨)</span>
+            </Label>
+            <Input
+              id="alias"
+              value={alias}
+              onChange={e => setAlias(e.target.value)}
+              placeholder="예: 팀 공용 A"
+            />
           </div>
 
           <div className="space-y-1">

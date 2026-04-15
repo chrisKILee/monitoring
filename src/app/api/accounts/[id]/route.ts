@@ -34,7 +34,7 @@ type Params = { params: Promise<{ id: string }> }
 
 export async function PUT(req: Request, { params }: Params) {
   const { id } = await params
-  const body = await req.json() as { name?: string; cookiesJson?: string; isActive?: boolean }
+  const body = await req.json() as { name?: string; alias?: string | null; cookiesJson?: string; isActive?: boolean; sortOrder?: number }
 
   const account = await prisma.account.findUnique({ where: { id } })
   if (!account) {
@@ -48,6 +48,7 @@ export async function PUT(req: Request, { params }: Params) {
     where: { id },
     data: {
       ...(body.name && { name: body.name }),
+      ...('alias' in body && { alias: body.alias ?? null }),
       ...(body.cookiesJson && (() => {
         const normalized = normalizeCookies(body.cookiesJson!)
         if (!normalized) throw new Error('쿠키 형식이 올바르지 않습니다')
@@ -58,8 +59,9 @@ export async function PUT(req: Request, { params }: Params) {
         }
       })()),
       ...(body.isActive !== undefined && { isActive: body.isActive }),
+      ...(body.sortOrder !== undefined && { sortOrder: body.sortOrder }),
     },
-    select: { id: true, name: true, orgId: true, isActive: true, updatedAt: true },
+    select: { id: true, name: true, alias: true, orgId: true, isActive: true, sortOrder: true, updatedAt: true },
   })
 
   return NextResponse.json({ data: updated })

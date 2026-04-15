@@ -4,11 +4,13 @@ import { encrypt, decrypt } from '@/lib/crypto'
 
 export async function GET() {
   const accounts = await prisma.account.findMany({
-    orderBy: { createdAt: 'asc' },
+    orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
     select: {
       id: true,
       name: true,
+      alias: true,
       orgId: true,
+      sortOrder: true,
       isActive: true,
       cookieExpiresAt: true,
       encryptedCookies: true,
@@ -27,6 +29,7 @@ export async function GET() {
     } catch { /* 복호화 실패 시 null */ }
     return { ...acc, deviceId }
   })
+
 
   return NextResponse.json({ data })
 }
