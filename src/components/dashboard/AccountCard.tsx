@@ -269,7 +269,6 @@ export function AccountCard({ account }: { account: AccountLatest }) {
   const latest = account.latest
   const router = useRouter()
   const [syncing, setSyncing] = useState(false)
-  const displayName = account.alias || account.name
 
   async function handleSync() {
     setSyncing(true)
@@ -285,7 +284,12 @@ export function AccountCard({ account }: { account: AccountLatest }) {
     <Card className="hover:shadow-md transition-shadow">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between gap-2">
-          <CardTitle className="text-base truncate">{displayName}</CardTitle>
+          <div className="min-w-0">
+            <CardTitle className="text-base truncate">{account.name}</CardTitle>
+            {account.alias && (
+              <p className="text-xs text-muted-foreground truncate">{account.alias}</p>
+            )}
+          </div>
           <div className="flex items-center gap-1.5 shrink-0">
             <StatusBadge account={account} />
             <Button
