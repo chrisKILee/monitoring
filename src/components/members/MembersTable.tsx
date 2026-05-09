@@ -263,7 +263,8 @@ export function MembersTable({ initialMembers, initialServiceAccounts }: Members
                 <th className="text-left p-3 font-medium hidden md:table-cell">목적</th>
                 <th className="text-left p-3 font-medium hidden sm:table-cell">시작일</th>
                 <th className="text-left p-3 font-medium">종료일</th>
-                <th className="text-left p-3 font-medium hidden lg:table-cell">사용 계정</th>
+                <th className="text-left p-3 font-medium hidden lg:table-cell">계정명</th>
+                <th className="text-left p-3 font-medium hidden lg:table-cell">서비스</th>
                 <th className="text-right p-3 font-medium">액션</th>
               </tr>
             </thead>
@@ -311,12 +312,12 @@ export function MembersTable({ initialMembers, initialServiceAccounts }: Members
                           className="h-7 text-sm w-36"
                         />
                       </td>
-                      {/* 사용 계정 */}
-                      <td className="p-2 hidden lg:table-cell">
+                      {/* 계정명 / 서비스 (편집 시 통합 선택) */}
+                      <td className="p-2 hidden lg:table-cell" colSpan={2}>
                         <select
                           value={editState.serviceAccountId}
                           onChange={e => setEditState(s => ({ ...s, serviceAccountId: e.target.value }))}
-                          className="h-7 rounded-md border border-input bg-transparent px-2 text-sm outline-none focus:ring-2 focus:ring-ring/50 w-40"
+                          className="h-7 rounded-md border border-input bg-transparent px-2 text-sm outline-none focus:ring-2 focus:ring-ring/50 w-52"
                         >
                           <option value="">없음</option>
                           {serviceAccounts.map(sa => (
@@ -367,14 +368,19 @@ export function MembersTable({ initialMembers, initialServiceAccounts }: Members
                     <td className="p-3">
                       <EndDateBadge endDate={member.endDate} />
                     </td>
-                    {/* 사용 계정 */}
-                    <td className="p-3 text-xs hidden lg:table-cell">
+                    {/* 계정명 */}
+                    <td className="p-3 text-sm hidden lg:table-cell">
+                      {member.serviceAccount
+                        ? <span className="font-medium">{member.serviceAccount.accountName}</span>
+                        : <span className="text-muted-foreground">-</span>}
+                    </td>
+                    {/* 서비스 */}
+                    <td className="p-3 hidden lg:table-cell">
                       {member.serviceAccount
                         ? (
-                          <div>
-                            <p className="font-medium text-foreground">{member.serviceAccount.accountName}</p>
-                            <p className="text-muted-foreground">{member.serviceAccount.service}</p>
-                          </div>
+                          member.serviceAccount.service === 'claude'
+                            ? <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-purple-100 text-purple-700">Claude</span>
+                            : <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-700">Codex</span>
                         )
                         : <span className="text-muted-foreground">-</span>}
                     </td>
