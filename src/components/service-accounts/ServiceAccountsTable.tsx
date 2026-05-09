@@ -27,13 +27,31 @@ interface Member {
   endDate: string | null
 }
 
+interface MonitoringAccount {
+  id: string
+  name: string
+  alias: string | null
+  isActive: boolean
+}
+
+interface LinkedAccount {
+  id: string
+  name: string
+  alias: string | null
+  isActive: boolean
+  lastError: string | null
+}
+
 interface ServiceAccount {
   id: string
   accountName: string
+  alias: string | null
   service: 'claude' | 'codex'
   phoneAuth: string | null
   isShared: string | null
   note: string | null
+  accountId: string | null
+  account: LinkedAccount | null
   members: Member[]
 }
 
@@ -41,22 +59,27 @@ type SharedValue = 'none' | '프로젝트계정' | '공유계정'
 
 interface EditDraft {
   accountName: string
+  alias: string
   service: 'claude' | 'codex'
   phoneAuth: string
   isShared: SharedValue
   note: string
+  accountId: string  // 'none' = null
 }
 
 interface AddDraft {
   accountName: string
+  alias: string
   service: 'claude' | 'codex'
   phoneAuth: string
   isShared: SharedValue
   note: string
+  accountId: string
 }
 
 interface Props {
   initialData: ServiceAccount[]
+  monitoringAccounts: MonitoringAccount[]
 }
 
 // ---------------------------------------------------------------------------
@@ -70,6 +93,10 @@ function formatDate(value: string | null): string {
     month: 'short',
     day: 'numeric',
   })
+}
+
+function monitoringLabel(acc: MonitoringAccount): string {
+  return acc.alias ? `${acc.alias} (${acc.name})` : acc.name
 }
 
 function ServiceBadge({ service }: { service: 'claude' | 'codex' }) {
@@ -112,18 +139,33 @@ function SharedBadge({ isShared }: { isShared: string | null }) {
   )
 }
 
+function LinkedAccountBadge({ account }: { account: LinkedAccount | null }) {
+  if (!account) return <span className="text-muted-foreground text-xs">-</span>
+  const label = account.alias || account.name
+  const hasError = !!account.lastError
+  const inactive = !account.isActive
+  return (
+    <span className={`text-xs font-medium ${hasError ? 'text-destructive' : inactive ? 'text-muted-foreground' : 'text-foreground'}`}>
+      {label}
+      {hasError && <span className="ml-1 text-destructive">⚠</span>}
+    </span>
+  )
+}
+
 function toDraft(acc: ServiceAccount): EditDraft {
   return {
     accountName: acc.accountName,
+    alias: acc.alias ?? '',
     service: acc.service,
     phoneAuth: acc.phoneAuth ?? '',
     isShared: (acc.isShared as '프로젝트계정' | '공유계정') ?? 'none',
     note: acc.note ?? '',
+    accountId: acc.accountId ?? 'none',
   }
 }
 
 function emptyAdd(): AddDraft {
-  return { accountName: '', service: 'claude', phoneAuth: '', isShared: 'none', note: '' }
+  return { accountName: '', alias: '', service: 'claude', phoneAuth: '', isShared: 'none', note: '', accountId: 'none' }
 }
 
 // ---------------------------------------------------------------------------
@@ -134,7 +176,7 @@ function MemberSubTable({ members }: { members: Member[] }) {
   if (members.length === 0) {
     return (
       <tr>
-        <td colSpan={8}>
+        <td colSpan={9}>
           <div className="pl-10 py-3 text-sm text-muted-foreground">사용 멤버 없음</div>
         </td>
       </tr>
@@ -143,7 +185,7 @@ function MemberSubTable({ members }: { members: Member[] }) {
 
   return (
     <tr>
-      <td colSpan={8} className="p-0">
+      <td colSpan={9} className="p-0">
         <div className="pl-10 pr-4 pb-3">
           <table className="w-full text-xs border rounded-md overflow-hidden">
             <thead className="bg-muted/60">
@@ -175,10 +217,12 @@ function AddDialog({
   open,
   onClose,
   onSuccess,
+  monitoringAccounts,
 }: {
   open: boolean
   onClose: () => void
   onSuccess: () => void
+  monitoringAccounts: MonitoringAccount[]
 }) {
   const [draft, setDraft] = useState<AddDraft>(emptyAdd)
   const [loading, setLoading] = useState(false)
@@ -195,12 +239,14 @@ function AddDialog({
     if (!draft.accountName.trim()) return
     setLoading(true)
     try {
-      const body: Record<string, string | undefined> = {
+      const body: Record<string, string | null | undefined> = {
         accountName: draft.accountName.trim(),
+        alias: draft.alias.trim() || null,
         service: draft.service,
-        phoneAuth: draft.phoneAuth.trim() || undefined,
-        isShared: draft.isShared === 'none' ? undefined : draft.isShared,
-        note: draft.note.trim() || undefined,
+        phoneAuth: draft.phoneAuth.trim() || null,
+        isShared: draft.isShared === 'none' ? null : draft.isShared,
+        note: draft.note.trim() || null,
+        accountId: draft.accountId === 'none' ? null : draft.accountId,
       }
       await fetch('/api/service-accounts', {
         method: 'POST',
@@ -232,8 +278,18 @@ function AddDialog({
               id="add-accountName"
               value={draft.accountName}
               onChange={(e) => setDraft((d) => ({ ...d, accountName: e.target.value }))}
-              placeholder="예: service-claude-01"
+              placeholder="예: rnd_dev_4"
               required
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="add-alias">별칭</Label>
+            <Input
+              id="add-alias"
+              value={draft.alias}
+              onChange={(e) => setDraft((d) => ({ ...d, alias: e.target.value }))}
+              placeholder="예: 개발팀 계정 A"
             />
           </div>
 
@@ -283,6 +339,26 @@ function AddDialog({
           </div>
 
           <div className="space-y-1.5">
+            <Label>모니터링 계정 연결</Label>
+            <Select
+              value={draft.accountId}
+              onValueChange={(v: string | null) => setDraft((d) => ({ ...d, accountId: v ?? 'none' }))}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">연결 안함</SelectItem>
+                {monitoringAccounts.map((a) => (
+                  <SelectItem key={a.id} value={a.id}>
+                    {monitoringLabel(a)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1.5">
             <Label htmlFor="add-note">비고</Label>
             <Input
               id="add-note"
@@ -310,7 +386,7 @@ function AddDialog({
 // Main component
 // ---------------------------------------------------------------------------
 
-export function ServiceAccountsTable({ initialData }: Props) {
+export function ServiceAccountsTable({ initialData, monitoringAccounts }: Props) {
   const router = useRouter()
   const [accounts, setAccounts] = useState<ServiceAccount[]>(initialData)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -320,12 +396,9 @@ export function ServiceAccountsTable({ initialData }: Props) {
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [addOpen, setAddOpen] = useState(false)
 
-  // Sync state when server re-renders (after router.refresh())
   useEffect(() => {
     setAccounts(initialData)
   }, [initialData])
-
-  // ---- helpers ----
 
   const refresh = useCallback(() => {
     router.refresh()
@@ -356,37 +429,38 @@ export function ServiceAccountsTable({ initialData }: Props) {
     }))
   }
 
-  // ---- API calls ----
-
   async function handleSave(id: string) {
     const d = drafts[id]
     if (!d) return
     setSavingId(id)
     try {
       const resolvedIsShared = d.isShared === 'none' ? null : d.isShared
-      const body: Record<string, string | null> = {
+      const resolvedAccountId = d.accountId === 'none' ? null : d.accountId
+      const linkedAccount = monitoringAccounts.find((a) => a.id === resolvedAccountId) ?? null
+
+      const body = {
         accountName: d.accountName.trim(),
+        alias: d.alias.trim() || null,
         service: d.service,
         phoneAuth: d.phoneAuth.trim() || null,
         isShared: resolvedIsShared,
         note: d.note.trim() || null,
+        accountId: resolvedAccountId,
       }
       await fetch(`/api/service-accounts/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       })
-      // Optimistic local update so the UI reflects changes immediately
       setAccounts((prev) =>
         prev.map((a) =>
           a.id === id
             ? {
                 ...a,
-                accountName: body.accountName!,
-                service: d.service,
-                phoneAuth: body.phoneAuth,
-                isShared: resolvedIsShared,
-                note: body.note,
+                ...body,
+                account: linkedAccount
+                  ? { ...linkedAccount, lastError: a.account?.lastError ?? null }
+                  : null,
               }
             : a
         )
@@ -414,11 +488,8 @@ export function ServiceAccountsTable({ initialData }: Props) {
     }
   }
 
-  // ---- render ----
-
   return (
     <div className="space-y-4">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">서비스 계정 관리</h1>
@@ -429,7 +500,6 @@ export function ServiceAccountsTable({ initialData }: Props) {
         </Button>
       </div>
 
-      {/* Table */}
       {accounts.length === 0 ? (
         <div className="text-center py-20 text-muted-foreground">
           <p>등록된 서비스 계정이 없습니다</p>
@@ -443,10 +513,11 @@ export function ServiceAccountsTable({ initialData }: Props) {
             <thead className="bg-muted/50">
               <tr>
                 <th className="w-8 p-3" aria-label="확장" />
-                <th className="text-left p-3 font-medium">계정명</th>
+                <th className="text-left p-3 font-medium">계정명 / 별칭</th>
                 <th className="text-left p-3 font-medium">서비스</th>
                 <th className="text-left p-3 font-medium hidden md:table-cell">전화인증</th>
                 <th className="text-left p-3 font-medium hidden sm:table-cell">공유계정</th>
+                <th className="text-left p-3 font-medium hidden lg:table-cell">모니터링 계정</th>
                 <th className="text-left p-3 font-medium hidden lg:table-cell">비고</th>
                 <th className="text-left p-3 font-medium">멤버수</th>
                 <th className="text-right p-3 font-medium">액션</th>
@@ -460,11 +531,8 @@ export function ServiceAccountsTable({ initialData }: Props) {
 
                 return (
                   <>
-                    <tr
-                      key={acc.id}
-                      className="border-t hover:bg-muted/20 transition-colors"
-                    >
-                      {/* Expand button */}
+                    <tr key={acc.id} className="border-t hover:bg-muted/20 transition-colors">
+                      {/* Expand */}
                       <td className="p-3 w-8">
                         <button
                           className="text-muted-foreground hover:text-foreground transition-colors text-xs leading-none"
@@ -476,17 +544,32 @@ export function ServiceAccountsTable({ initialData }: Props) {
                         </button>
                       </td>
 
-                      {/* 계정명 */}
+                      {/* 계정명 / 별칭 */}
                       <td className="p-3">
                         {isEditing ? (
-                          <Input
-                            value={d.accountName}
-                            onChange={(e) => updateDraft(acc.id, 'accountName', e.target.value)}
-                            className="h-7 text-sm w-40"
-                            aria-label="계정명"
-                          />
+                          <div className="flex flex-col gap-1">
+                            <Input
+                              value={d.accountName}
+                              onChange={(e) => updateDraft(acc.id, 'accountName', e.target.value)}
+                              className="h-7 text-sm w-40"
+                              placeholder="계정명"
+                              aria-label="계정명"
+                            />
+                            <Input
+                              value={d.alias}
+                              onChange={(e) => updateDraft(acc.id, 'alias', e.target.value)}
+                              className="h-7 text-xs w-40 text-muted-foreground"
+                              placeholder="별칭 (선택)"
+                              aria-label="별칭"
+                            />
+                          </div>
                         ) : (
-                          <span className="font-medium">{acc.accountName}</span>
+                          <div>
+                            <p className="font-medium">{acc.alias || acc.accountName}</p>
+                            {acc.alias && (
+                              <p className="text-xs text-muted-foreground">{acc.accountName}</p>
+                            )}
+                          </div>
                         )}
                       </td>
 
@@ -541,12 +624,36 @@ export function ServiceAccountsTable({ initialData }: Props) {
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="none">관리하지 않음</SelectItem>
-                              <SelectItem value="Y">Y</SelectItem>
-                              <SelectItem value="N">N</SelectItem>
+                              <SelectItem value="프로젝트계정">프로젝트계정</SelectItem>
+                              <SelectItem value="공유계정">공유계정</SelectItem>
                             </SelectContent>
                           </Select>
                         ) : (
                           <SharedBadge isShared={acc.isShared} />
+                        )}
+                      </td>
+
+                      {/* 모니터링 계정 */}
+                      <td className="p-3 hidden lg:table-cell">
+                        {isEditing ? (
+                          <Select
+                            value={d.accountId}
+                            onValueChange={(v: string | null) => updateDraft(acc.id, 'accountId', v ?? 'none')}
+                          >
+                            <SelectTrigger size="sm" className="w-44" aria-label="모니터링 계정">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">연결 안함</SelectItem>
+                              {monitoringAccounts.map((a) => (
+                                <SelectItem key={a.id} value={a.id}>
+                                  {monitoringLabel(a)}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <LinkedAccountBadge account={acc.account} />
                         )}
                       </td>
 
@@ -557,7 +664,7 @@ export function ServiceAccountsTable({ initialData }: Props) {
                             value={d.note}
                             onChange={(e) => updateDraft(acc.id, 'note', e.target.value)}
                             placeholder="-"
-                            className="h-7 text-sm w-48"
+                            className="h-7 text-sm w-40"
                             aria-label="비고"
                           />
                         ) : (
@@ -619,7 +726,6 @@ export function ServiceAccountsTable({ initialData }: Props) {
                       </td>
                     </tr>
 
-                    {/* Expanded member sub-table */}
                     {isExpanded && <MemberSubTable key={`${acc.id}-members`} members={acc.members} />}
                   </>
                 )
@@ -629,8 +735,12 @@ export function ServiceAccountsTable({ initialData }: Props) {
         </div>
       )}
 
-      {/* Add dialog */}
-      <AddDialog open={addOpen} onClose={() => setAddOpen(false)} onSuccess={refresh} />
+      <AddDialog
+        open={addOpen}
+        onClose={() => setAddOpen(false)}
+        onSuccess={refresh}
+        monitoringAccounts={monitoringAccounts}
+      />
     </div>
   )
 }

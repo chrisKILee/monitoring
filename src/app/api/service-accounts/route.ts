@@ -5,6 +5,7 @@ export async function GET() {
   const accounts = await prisma.serviceAccount.findMany({
     orderBy: { accountName: 'asc' },
     include: {
+      account: { select: { id: true, name: true, alias: true, isActive: true, lastError: true } },
       members: {
         select: { id: true, name: true, purpose: true, startDate: true, endDate: true },
         orderBy: { name: 'asc' },
@@ -30,15 +31,20 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: '이미 존재하는 계정명입니다' }, { status: 409 })
   }
 
-  const account = await prisma.serviceAccount.create({
+  const created = await prisma.serviceAccount.create({
     data: {
       accountName: body.accountName.trim(),
+      alias: body.alias?.trim() ?? null,
       service: body.service.trim(),
       phoneAuth: body.phoneAuth ?? null,
       isShared: body.isShared ?? null,
       note: body.note ?? null,
+      accountId: body.accountId ?? null,
     },
-    include: { members: true },
+    include: {
+      account: { select: { id: true, name: true, alias: true, isActive: true, lastError: true } },
+      members: true,
+    },
   })
-  return NextResponse.json(account, { status: 201 })
+  return NextResponse.json(created, { status: 201 })
 }

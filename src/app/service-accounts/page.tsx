@@ -11,16 +11,23 @@ function getSortGroup(name: string): number {
 }
 
 export default async function ServiceAccountsPage() {
-  const accounts = await prisma.serviceAccount.findMany({
-    include: {
-      members: {
-        select: { id: true, name: true, purpose: true, startDate: true, endDate: true },
-        orderBy: { name: 'asc' },
+  const [serviceAccounts, monitoringAccounts] = await Promise.all([
+    prisma.serviceAccount.findMany({
+      include: {
+        account: { select: { id: true, name: true, alias: true, isActive: true, lastError: true } },
+        members: {
+          select: { id: true, name: true, purpose: true, startDate: true, endDate: true },
+          orderBy: { name: 'asc' },
+        },
       },
-    },
-  })
+    }),
+    prisma.account.findMany({
+      orderBy: { sortOrder: 'asc' },
+      select: { id: true, name: true, alias: true, isActive: true },
+    }),
+  ])
 
-  const sorted = [...accounts].sort((a, b) => {
+  const sorted = [...serviceAccounts].sort((a, b) => {
     const ga = getSortGroup(a.accountName)
     const gb = getSortGroup(b.accountName)
     if (ga !== gb) return ga - gb
@@ -29,7 +36,7 @@ export default async function ServiceAccountsPage() {
 
   return (
     <div className="container mx-auto px-4 py-6">
-      <ServiceAccountsTable initialData={sorted as any} />
+      <ServiceAccountsTable initialData={sorted as any} monitoringAccounts={monitoringAccounts} />
     </div>
   )
 }

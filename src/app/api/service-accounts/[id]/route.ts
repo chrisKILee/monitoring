@@ -13,12 +13,17 @@ export async function PATCH(req: Request, { params }: Ctx) {
     where: { id },
     data: {
       ...(body.accountName !== undefined && { accountName: body.accountName }),
+      ...(body.alias !== undefined && { alias: body.alias }),
       ...(body.service !== undefined && { service: body.service }),
       ...(body.phoneAuth !== undefined && { phoneAuth: body.phoneAuth }),
       ...(body.isShared !== undefined && { isShared: body.isShared }),
       ...(body.note !== undefined && { note: body.note }),
+      ...(body.accountId !== undefined && { accountId: body.accountId }),
     },
-    include: { members: { select: { id: true, name: true } } },
+    include: {
+      account: { select: { id: true, name: true, alias: true, isActive: true, lastError: true } },
+      members: { select: { id: true, name: true } },
+    },
   })
   return NextResponse.json(updated)
 }
