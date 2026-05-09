@@ -23,7 +23,7 @@ export async function sendAlert(
   })
 }
 
-async function sendGoogleChat(message: string): Promise<void> {
+export async function sendGoogleChat(message: string): Promise<void> {
   const webhookUrl = process.env.GOOGLE_CHAT_WEBHOOK_URL
   if (!webhookUrl) throw new Error('GOOGLE_CHAT_WEBHOOK_URL 환경변수가 설정되지 않았습니다')
 

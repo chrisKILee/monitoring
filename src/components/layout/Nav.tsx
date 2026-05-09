@@ -8,7 +8,9 @@ export function Nav() {
 
   const links = [
     { href: '/dashboard', label: '대시보드' },
-    { href: '/accounts', label: '계정 관리' },
+    { href: '/members', label: '사용자 관리' },
+    { href: '/service-accounts', label: '계정 관리' },
+    { href: '/accounts', label: '모니터링 계정' },
   ]
 
   return (

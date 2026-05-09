@@ -29,6 +29,40 @@ model Account {
   alertLogs AlertLog[]
 }
 
+model ServiceAccount {
+  id          String    @id @default(cuid())
+  accountName String    @unique
+  service     String
+  phoneAuth   String?
+  isShared    String?
+  note        String?
+
+  members Member[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("service_account")
+}
+
+model Member {
+  id      String  @id @default(cuid())
+  name    String
+  purpose String?
+
+  startDate DateTime?
+  endDate   DateTime?
+
+  serviceAccountId String?
+  serviceAccount   ServiceAccount? @relation(fields: [serviceAccountId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([serviceAccountId])
+  @@index([endDate])
+}
+
 model UsageLog {
   id        String  @id @default(cuid())
   accountId String
@@ -66,11 +100,12 @@ model UsageLog {
 
 model AlertLog {
   id        String   @id @default(cuid())
-  accountId String
-  account   Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  accountId String?
+  account   Account? @relation(fields: [accountId], references: [id], onDelete: Cascade)
   alertType String
   message   String
   sentAt    DateTime @default(now())
 
   @@index([accountId, sentAt(sort: Desc)])
+  @@index([alertType, sentAt(sort: Desc)])
 }
