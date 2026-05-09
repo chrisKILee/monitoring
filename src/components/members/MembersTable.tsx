@@ -334,10 +334,10 @@ export function MembersTable({ initialMembers, initialServiceAccounts }: Members
             <thead className="bg-muted/50">
               <tr>
                 <th className="text-left p-3 font-medium">이름</th>
-                <th className="text-left p-3 font-medium hidden md:table-cell">목적</th>
                 <th className="text-left p-3 font-medium hidden sm:table-cell">시작일</th>
                 <th className="text-left p-3 font-medium">종료일</th>
                 <th className="text-left p-3 font-medium hidden lg:table-cell">사용 계정</th>
+                <th className="text-left p-3 font-medium hidden md:table-cell">목적</th>
                 <th className="text-right p-3 font-medium">액션</th>
               </tr>
             </thead>
@@ -355,14 +355,6 @@ export function MembersTable({ initialMembers, initialServiceAccounts }: Members
                           onChange={e => setEditState(s => ({ ...s, name: e.target.value }))}
                           className="h-7 text-sm min-w-24"
                           placeholder="이름"
-                        />
-                      </td>
-                      <td className="p-2 hidden md:table-cell">
-                        <Input
-                          value={editState.purpose}
-                          onChange={e => setEditState(s => ({ ...s, purpose: e.target.value }))}
-                          className="h-7 text-sm min-w-24"
-                          placeholder="목적"
                         />
                       </td>
                       <td className="p-2 hidden sm:table-cell">
@@ -388,6 +380,14 @@ export function MembersTable({ initialMembers, initialServiceAccounts }: Members
                           onChange={ids => setEditState(s => ({ ...s, serviceAccountIds: ids }))}
                         />
                       </td>
+                      <td className="p-2 hidden md:table-cell">
+                        <Input
+                          value={editState.purpose}
+                          onChange={e => setEditState(s => ({ ...s, purpose: e.target.value }))}
+                          className="h-7 text-sm min-w-24"
+                          placeholder="목적"
+                        />
+                      </td>
                       <td className="p-2">
                         <div className="flex justify-end gap-1">
                           <Button size="sm" onClick={() => handleSave(member.id)} disabled={saving}>
@@ -407,9 +407,6 @@ export function MembersTable({ initialMembers, initialServiceAccounts }: Members
                     onClick={() => startEdit(member)}
                   >
                     <td className="p-3 font-medium">{member.name}</td>
-                    <td className="p-3 text-muted-foreground hidden md:table-cell">
-                      {member.purpose ?? <span className="text-muted-foreground/50">-</span>}
-                    </td>
                     <td className="p-3 text-xs text-muted-foreground hidden sm:table-cell">
                       {member.startDate
                         ? new Date(member.startDate).toLocaleDateString('ko-KR', { year: 'numeric', month: 'short', day: 'numeric' })
@@ -420,6 +417,9 @@ export function MembersTable({ initialMembers, initialServiceAccounts }: Members
                     </td>
                     <td className="p-3 hidden lg:table-cell">
                       <AccountList accounts={member.serviceAccounts} />
+                    </td>
+                    <td className="p-3 text-muted-foreground hidden md:table-cell">
+                      {member.purpose ?? <span className="text-muted-foreground/50">-</span>}
                     </td>
                     <td className="p-3" onClick={e => e.stopPropagation()}>
                       <div className="flex justify-end gap-1">
