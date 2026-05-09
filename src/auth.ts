@@ -1,25 +1,22 @@
 import NextAuth from 'next-auth'
 import Google from 'next-auth/providers/google'
+import { authConfig } from '@/auth.config'
 import { prisma } from '@/lib/prisma'
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
+  ...authConfig,
   providers: [
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     }),
   ],
-  pages: {
-    signIn: '/auth/signin',
-    error: '/auth/error',
-  },
   session: { strategy: 'jwt' },
   callbacks: {
     async signIn({ profile }) {
       const email = profile?.email
       if (!email?.endsWith('@vntgcorp.com')) return false
 
-      // Auto-register on first sign-in
       const existing = await prisma.appUser.findUnique({ where: { email } })
       if (!existing) {
         const isFirst = (await prisma.appUser.count()) === 0

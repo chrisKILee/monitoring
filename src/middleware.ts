@@ -1,17 +1,7 @@
-import { auth } from '@/auth'
-import { NextResponse } from 'next/server'
+import NextAuth from 'next-auth'
+import { authConfig } from '@/auth.config'
 
-export default auth((req) => {
-  const { pathname } = req.nextUrl
-
-  if (!req.auth?.user) {
-    return NextResponse.redirect(new URL('/auth/signin', req.url))
-  }
-
-  if (pathname.startsWith('/admin') && req.auth.user.role !== 'admin') {
-    return NextResponse.redirect(new URL('/dashboard', req.url))
-  }
-})
+export default NextAuth(authConfig).auth
 
 export const config = {
   matcher: [
