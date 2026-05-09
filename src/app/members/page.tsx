@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { MembersTable } from '@/components/members/MembersTable'
 
 interface ServiceAccount {
