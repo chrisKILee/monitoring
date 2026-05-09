@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -37,11 +37,13 @@ interface ServiceAccount {
   members: Member[]
 }
 
+type SharedValue = 'Y' | 'N' | 'none'
+
 interface EditDraft {
   accountName: string
   service: 'claude' | 'codex'
   phoneAuth: string
-  isShared: 'Y' | 'N' | ''
+  isShared: SharedValue
   note: string
 }
 
@@ -49,7 +51,7 @@ interface AddDraft {
   accountName: string
   service: 'claude' | 'codex'
   phoneAuth: string
-  isShared: 'Y' | 'N' | ''
+  isShared: SharedValue
   note: string
 }
 
@@ -96,7 +98,14 @@ function SharedBadge({ isShared }: { isShared: string | null }) {
   if (isShared === 'N') {
     return <Badge variant="secondary">N</Badge>
   }
-  return <span className="text-muted-foreground">-</span>
+  return (
+    <Badge
+      variant="outline"
+      className="text-amber-600 border-amber-400 bg-amber-50 dark:text-amber-400 dark:border-amber-600 dark:bg-amber-950/40 font-semibold"
+    >
+      관리하지 않음
+    </Badge>
+  )
 }
 
 function toDraft(acc: ServiceAccount): EditDraft {
@@ -104,13 +113,13 @@ function toDraft(acc: ServiceAccount): EditDraft {
     accountName: acc.accountName,
     service: acc.service,
     phoneAuth: acc.phoneAuth ?? '',
-    isShared: (acc.isShared as 'Y' | 'N') ?? '',
+    isShared: (acc.isShared as 'Y' | 'N') ?? 'none',
     note: acc.note ?? '',
   }
 }
 
 function emptyAdd(): AddDraft {
-  return { accountName: '', service: 'claude', phoneAuth: '', isShared: '', note: '' }
+  return { accountName: '', service: 'claude', phoneAuth: '', isShared: 'none', note: '' }
 }
 
 // ---------------------------------------------------------------------------
@@ -121,7 +130,7 @@ function MemberSubTable({ members }: { members: Member[] }) {
   if (members.length === 0) {
     return (
       <tr>
-        <td colSpan={7}>
+        <td colSpan={8}>
           <div className="pl-10 py-3 text-sm text-muted-foreground">사용 멤버 없음</div>
         </td>
       </tr>
@@ -130,7 +139,7 @@ function MemberSubTable({ members }: { members: Member[] }) {
 
   return (
     <tr>
-      <td colSpan={7} className="p-0">
+      <td colSpan={8} className="p-0">
         <div className="pl-10 pr-4 pb-3">
           <table className="w-full text-xs border rounded-md overflow-hidden">
             <thead className="bg-muted/60">
@@ -186,7 +195,7 @@ function AddDialog({
         accountName: draft.accountName.trim(),
         service: draft.service,
         phoneAuth: draft.phoneAuth.trim() || undefined,
-        isShared: draft.isShared || undefined,
+        isShared: draft.isShared === 'none' ? undefined : draft.isShared,
         note: draft.note.trim() || undefined,
       }
       await fetch('/api/service-accounts', {
@@ -256,13 +265,13 @@ function AddDialog({
             <Label>공유계정</Label>
             <Select
               value={draft.isShared}
-              onValueChange={(v) => setDraft((d) => ({ ...d, isShared: v as 'Y' | 'N' | '' }))}
+              onValueChange={(v) => setDraft((d) => ({ ...d, isShared: v as SharedValue }))}
             >
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="미설정" />
+                <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">미설정</SelectItem>
+                <SelectItem value="none">관리하지 않음</SelectItem>
                 <SelectItem value="Y">Y</SelectItem>
                 <SelectItem value="N">N</SelectItem>
               </SelectContent>
@@ -299,13 +308,18 @@ function AddDialog({
 
 export function ServiceAccountsTable({ initialData }: Props) {
   const router = useRouter()
-  const [accounts] = useState<ServiceAccount[]>(initialData)
+  const [accounts, setAccounts] = useState<ServiceAccount[]>(initialData)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [drafts, setDrafts] = useState<Record<string, EditDraft>>({})
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
   const [savingId, setSavingId] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [addOpen, setAddOpen] = useState(false)
+
+  // Sync state when server re-renders (after router.refresh())
+  useEffect(() => {
+    setAccounts(initialData)
+  }, [initialData])
 
   // ---- helpers ----
 
@@ -345,11 +359,12 @@ export function ServiceAccountsTable({ initialData }: Props) {
     if (!d) return
     setSavingId(id)
     try {
+      const resolvedIsShared = d.isShared === 'none' ? null : d.isShared
       const body: Record<string, string | null> = {
         accountName: d.accountName.trim(),
         service: d.service,
         phoneAuth: d.phoneAuth.trim() || null,
-        isShared: d.isShared || null,
+        isShared: resolvedIsShared,
         note: d.note.trim() || null,
       }
       await fetch(`/api/service-accounts/${id}`, {
@@ -357,6 +372,21 @@ export function ServiceAccountsTable({ initialData }: Props) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       })
+      // Optimistic local update so the UI reflects changes immediately
+      setAccounts((prev) =>
+        prev.map((a) =>
+          a.id === id
+            ? {
+                ...a,
+                accountName: body.accountName!,
+                service: d.service,
+                phoneAuth: body.phoneAuth,
+                isShared: resolvedIsShared,
+                note: body.note,
+              }
+            : a
+        )
+      )
       setEditingId(null)
       refresh()
     } catch (err) {
@@ -371,6 +401,7 @@ export function ServiceAccountsTable({ initialData }: Props) {
     setDeletingId(acc.id)
     try {
       await fetch(`/api/service-accounts/${acc.id}`, { method: 'DELETE' })
+      setAccounts((prev) => prev.filter((a) => a.id !== acc.id))
       refresh()
     } catch (err) {
       console.error('서비스 계정 삭제 실패:', err)
@@ -498,14 +529,14 @@ export function ServiceAccountsTable({ initialData }: Props) {
                           <Select
                             value={d.isShared}
                             onValueChange={(v) =>
-                              updateDraft(acc.id, 'isShared', v as 'Y' | 'N' | '')
+                              updateDraft(acc.id, 'isShared', v as SharedValue)
                             }
                           >
-                            <SelectTrigger size="sm" className="w-24" aria-label="공유계정">
-                              <SelectValue placeholder="미설정" />
+                            <SelectTrigger size="sm" className="w-32" aria-label="공유계정">
+                              <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="">미설정</SelectItem>
+                              <SelectItem value="none">관리하지 않음</SelectItem>
                               <SelectItem value="Y">Y</SelectItem>
                               <SelectItem value="N">N</SelectItem>
                             </SelectContent>
