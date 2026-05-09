@@ -37,7 +37,7 @@ interface ServiceAccount {
   members: Member[]
 }
 
-type SharedValue = 'Y' | 'N' | 'none'
+type SharedValue = 'none' | '프로젝트계정' | '공유계정'
 
 interface EditDraft {
   accountName: string
@@ -88,15 +88,19 @@ function ServiceBadge({ service }: { service: 'claude' | 'codex' }) {
 }
 
 function SharedBadge({ isShared }: { isShared: string | null }) {
-  if (isShared === 'Y') {
+  if (isShared === '프로젝트계정') {
     return (
-      <Badge className="bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800">
-        Y
+      <Badge className="bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800">
+        프로젝트계정
       </Badge>
     )
   }
-  if (isShared === 'N') {
-    return <Badge variant="secondary">N</Badge>
+  if (isShared === '공유계정') {
+    return (
+      <Badge className="bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800">
+        공유계정
+      </Badge>
+    )
   }
   return (
     <Badge
@@ -113,7 +117,7 @@ function toDraft(acc: ServiceAccount): EditDraft {
     accountName: acc.accountName,
     service: acc.service,
     phoneAuth: acc.phoneAuth ?? '',
-    isShared: (acc.isShared as 'Y' | 'N') ?? 'none',
+    isShared: (acc.isShared as '프로젝트계정' | '공유계정') ?? 'none',
     note: acc.note ?? '',
   }
 }
@@ -272,8 +276,8 @@ function AddDialog({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">관리하지 않음</SelectItem>
-                <SelectItem value="Y">Y</SelectItem>
-                <SelectItem value="N">N</SelectItem>
+                <SelectItem value="프로젝트계정">프로젝트계정</SelectItem>
+                <SelectItem value="공유계정">공유계정</SelectItem>
               </SelectContent>
             </Select>
           </div>
