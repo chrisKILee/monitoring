@@ -40,6 +40,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           token.userId = user.id
           token.role = user.role
         }
+      } else if (token.userId && !token.role) {
+        // 이전 토큰에 role이 없으면 DB에서 보충
+        const user = await prisma.appUser.findUnique({
+          where: { id: token.userId as string },
+          select: { role: true },
+        })
+        if (user) token.role = user.role
       }
       return token
     },
