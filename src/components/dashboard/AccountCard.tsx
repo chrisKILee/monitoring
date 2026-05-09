@@ -88,7 +88,7 @@ function Segmented5hBar({
     'bg-emerald-500'
 
   return (
-    <div className="space-y-1">
+    <div className="space-y-1 min-h-[76px]">
       <div className="flex justify-between items-center text-xs">
         <span className="text-muted-foreground font-medium">5시간 윈도우</span>
         <span className={`font-bold tabular-nums ${pct >= 90 ? 'text-red-500' : pct >= 70 ? 'text-yellow-600' : ''}`}>
@@ -162,7 +162,7 @@ function Grid7dBar({
     'bg-emerald-400/80'
 
   return (
-    <div className="space-y-1">
+    <div className="space-y-1 min-h-[64px]">
       <div className="flex justify-between items-center text-xs">
         <span className="text-muted-foreground font-medium">{label}</span>
         <span className={`font-bold tabular-nums ${pct >= 90 ? 'text-red-500' : pct >= 70 ? 'text-yellow-600' : ''}`}>
@@ -223,14 +223,17 @@ function Usage48hChart({ logs }: { logs: RecentLog[] }) {
 
   if (data.length < 2) {
     return (
-      <div className="flex items-center justify-center h-24 text-xs text-muted-foreground">
-        데이터 부족 (수집 후 확인)
+      <div className="min-h-[140px] flex flex-col">
+        <p className="text-xs text-muted-foreground font-medium mb-1">7일 사용량 추세 (48h)</p>
+        <div className="flex-1 flex items-center justify-center text-xs text-muted-foreground">
+          데이터 부족 (수집 후 확인)
+        </div>
       </div>
     )
   }
 
   return (
-    <div>
+    <div className="min-h-[140px]">
       <p className="text-xs text-muted-foreground font-medium mb-1">7일 사용량 추세 (48h)</p>
       <ResponsiveContainer width="100%" height={120}>
         <LineChart data={data} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
