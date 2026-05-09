@@ -7,7 +7,12 @@ export default async function MembersPage() {
   const [members, serviceAccounts] = await Promise.all([
     prisma.member.findMany({
       orderBy: { createdAt: 'asc' },
-      include: { serviceAccount: { select: { id: true, accountName: true, service: true } } },
+      include: {
+        serviceAccounts: {
+          select: { id: true, accountName: true, service: true },
+          orderBy: { accountName: 'asc' },
+        },
+      },
     }),
     prisma.serviceAccount.findMany({
       orderBy: { accountName: 'asc' },

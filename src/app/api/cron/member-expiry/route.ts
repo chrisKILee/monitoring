@@ -33,7 +33,7 @@ export async function GET(req: Request) {
 
   const members = await prisma.member.findMany({
     where: { endDate: { gte: today, lte: maxDate } },
-    include: { serviceAccount: { select: { accountName: true } } },
+    include: { serviceAccounts: { select: { accountName: true }, orderBy: { accountName: 'asc' } } },
   })
 
   let sent = 0
@@ -62,7 +62,7 @@ export async function GET(req: Request) {
     }
 
     const label = days === 0 ? '당일' : `D-${days}`
-    const account = member.serviceAccount?.accountName ?? '-'
+    const account = member.serviceAccounts.map(sa => sa.accountName).join(', ') || '-'
     const message = [
       `🔔 *[AI 계정 만료 ${label}]*`,
       `*이름*: ${member.name}`,

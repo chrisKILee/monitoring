@@ -1,8 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -12,94 +7,74 @@ datasource db {
 }
 
 model Account {
-  id               String    @id @default(cuid())
+  id               String           @id @default(cuid())
   name             String
+  orgId            String           @unique
+  encryptedCookies String
+  isActive         Boolean          @default(true)
+  lastFetchedAt    DateTime?
+  lastError        String?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  cookieExpiresAt  DateTime?
   alias            String?
-  orgId            String    @unique
-  sortOrder        Int       @default(0)
-  encryptedCookies  String
-  cookieExpiresAt   DateTime?
-  isActive          Boolean   @default(true)
-  lastFetchedAt     DateTime?
-  lastError         String?
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
-
-  usageLogs      UsageLog[]
-  alertLogs      AlertLog[]
-  serviceAccounts ServiceAccount[]
+  sortOrder        Int              @default(0)
+  alertLogs        AlertLog[]
+  usageLogs        UsageLog[]
+  serviceAccounts  ServiceAccount[]
 }
 
 model ServiceAccount {
-  id          String    @id @default(cuid())
-  accountName String    @unique
-  alias       String?
-  service     String
+  id          String   @id @default(cuid())
+  accountName String   @unique
   phoneAuth   String?
   isShared    String?
   note        String?
-
-  accountId String?
-  account   Account? @relation(fields: [accountId], references: [id], onDelete: SetNull)
-
-  members Member[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  service     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  accountId   String?
+  alias       String?
+  members     Member[]
+  account     Account? @relation(fields: [accountId], references: [id])
 
   @@index([accountId])
   @@map("service_account")
 }
 
 model Member {
-  id      String  @id @default(cuid())
-  name    String
-  purpose String?
+  id              String           @id @default(cuid())
+  name            String
+  purpose         String?
+  startDate       DateTime?
+  endDate         DateTime?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  serviceAccounts ServiceAccount[]
 
-  startDate DateTime?
-  endDate   DateTime?
-
-  serviceAccountId String?
-  serviceAccount   ServiceAccount? @relation(fields: [serviceAccountId], references: [id], onDelete: SetNull)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([serviceAccountId])
   @@index([endDate])
 }
 
 model UsageLog {
-  id        String  @id @default(cuid())
-  accountId String
-  account   Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
-
-  rawResponse Json
-
-  // 5시간 윈도우
-  utilization5h Int?       // 0-100 %
-  resetAt5h     DateTime?
-
-  // 7일 윈도우
-  utilization7d       Int?       // 0-100 %
+  id                  String    @id @default(cuid())
+  accountId           String
+  rawResponse         Json
+  usedMessages        Int?
+  totalMessages       Int?
+  usagePercent        Float?
+  expiresAt           DateTime?
+  planName            String?
+  resetAt             DateTime?
+  predictExceed5h     Boolean   @default(false)
+  predictExceed7d     Boolean   @default(false)
+  fetchedAt           DateTime  @default(now())
+  resetAt5h           DateTime?
   resetAt7d           DateTime?
-
-  // 7일 Sonnet 윈도우
-  utilization7dSonnet Int?       // 0-100 %
   resetAt7dSonnet     DateTime?
-
-  // 하위 호환 (기존 필드 유지)
-  usedMessages  Int?
-  totalMessages Int?
-  usagePercent  Float?
-  expiresAt     DateTime?
-  planName      String?
-  resetAt       DateTime?
-
-  predictExceed5h Boolean @default(false)
-  predictExceed7d Boolean @default(false)
-
-  fetchedAt DateTime @default(now())
+  utilization5h       Int?
+  utilization7d       Int?
+  utilization7dSonnet Int?
+  account             Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
 
   @@index([accountId, fetchedAt(sort: Desc)])
 }
@@ -109,10 +84,10 @@ model AppUser {
   email       String          @unique
   name        String?
   image       String?
-  role        String          @default("user") // "admin" | "user"
-  permissions UserPermission?
+  role        String          @default("user")
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
+  permissions UserPermission?
 
   @@map("app_user")
 }
@@ -120,14 +95,13 @@ model AppUser {
 model UserPermission {
   id              String  @id @default(cuid())
   userId          String  @unique
-  user            AppUser @relation(fields: [userId], references: [id], onDelete: Cascade)
-
   membersRead     Boolean @default(false)
   membersWrite    Boolean @default(false)
   serviceAccRead  Boolean @default(false)
   serviceAccWrite Boolean @default(false)
   monitoringRead  Boolean @default(false)
   monitoringWrite Boolean @default(false)
+  user            AppUser @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_permission")
 }
@@ -135,10 +109,10 @@ model UserPermission {
 model AlertLog {
   id        String   @id @default(cuid())
   accountId String?
-  account   Account? @relation(fields: [accountId], references: [id], onDelete: Cascade)
   alertType String
   message   String
   sentAt    DateTime @default(now())
+  account   Account? @relation(fields: [accountId], references: [id], onDelete: Cascade)
 
   @@index([accountId, sentAt(sort: Desc)])
   @@index([alertType, sentAt(sort: Desc)])
