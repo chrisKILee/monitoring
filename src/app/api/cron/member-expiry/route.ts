@@ -31,17 +31,20 @@ export async function GET(req: Request) {
   const maxDate = new Date(today)
   maxDate.setDate(today.getDate() + 5)
 
-  const members = await prisma.member.findMany({
+  const links = await prisma.memberServiceAccount.findMany({
     where: { endDate: { gte: today, lte: maxDate } },
-    include: { serviceAccounts: { select: { accountName: true }, orderBy: { accountName: 'asc' } } },
+    include: {
+      member: { select: { id: true, name: true, purpose: true } },
+      serviceAccount: { select: { accountName: true } },
+    },
   })
 
   let sent = 0
   let skipped = 0
 
-  for (const member of members) {
-    if (!member.endDate) continue
-    const days = daysUntil(member.endDate)
+  for (const link of links) {
+    if (!link.endDate) continue
+    const days = daysUntil(link.endDate)
     const trigger = EXPIRY_DAYS.find(d => d === days)
     if (trigger === undefined) continue
 
@@ -51,7 +54,7 @@ export async function GET(req: Request) {
     const alreadySent = await prisma.alertLog.findFirst({
       where: {
         alertType,
-        message: { contains: member.id },
+        message: { contains: link.id },
         sentAt: { gte: today },
       },
     })
@@ -62,13 +65,12 @@ export async function GET(req: Request) {
     }
 
     const label = days === 0 ? '당일' : `D-${days}`
-    const account = member.serviceAccounts.map(sa => sa.accountName).join(', ') || '-'
     const message = [
       `🔔 *[AI 계정 만료 ${label}]*`,
-      `*이름*: ${member.name}`,
-      `*계정*: ${account}`,
-      ...(member.purpose ? [`*목적*: ${member.purpose}`] : []),
-      `*종료일*: ${member.endDate.toLocaleDateString('ko-KR')} (${label})`,
+      `*이름*: ${link.member.name}`,
+      `*계정*: ${link.serviceAccount.accountName}`,
+      ...(link.member.purpose ? [`*목적*: ${link.member.purpose}`] : []),
+      `*종료일*: ${link.endDate.toLocaleDateString('ko-KR')} (${label})`,
     ].join('\n')
 
     await sendGoogleChat(message)
@@ -76,11 +78,11 @@ export async function GET(req: Request) {
       data: {
         accountId: 'system',
         alertType,
-        message: `${member.id}|${member.name}|${todayStr}`,
+        message: `${link.id}|${link.member.name}|${todayStr}`,
       },
     })
     sent++
   }
 
-  return NextResponse.json({ sent, skipped, total: members.length })
+  return NextResponse.json({ sent, skipped, total: links.length })
 }

@@ -6,9 +6,9 @@ export async function GET() {
     orderBy: { accountName: 'asc' },
     include: {
       account: { select: { id: true, name: true, alias: true, isActive: true, lastError: true } },
-      members: {
-        select: { id: true, name: true, purpose: true, startDate: true, endDate: true },
-        orderBy: { name: 'asc' },
+      memberLinks: {
+        include: { member: { select: { id: true, name: true, purpose: true } } },
+        orderBy: { member: { name: 'asc' } },
       },
     },
   })
@@ -43,7 +43,7 @@ export async function POST(req: Request) {
     },
     include: {
       account: { select: { id: true, name: true, alias: true, isActive: true, lastError: true } },
-      members: true,
+      memberLinks: true,
     },
   })
   return NextResponse.json(created, { status: 201 })

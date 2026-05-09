@@ -22,7 +22,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
     },
     include: {
       account: { select: { id: true, name: true, alias: true, isActive: true, lastError: true } },
-      members: { select: { id: true, name: true } },
+      memberLinks: { include: { member: { select: { id: true, name: true } } } },
     },
   })
   return NextResponse.json(updated)

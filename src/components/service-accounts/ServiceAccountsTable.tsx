@@ -19,12 +19,15 @@ import {
 // Types
 // ---------------------------------------------------------------------------
 
-interface Member {
+interface MemberLink {
   id: string
-  name: string
-  purpose: string | null
   startDate: string | null
   endDate: string | null
+  member: {
+    id: string
+    name: string
+    purpose: string | null
+  }
 }
 
 interface MonitoringAccount {
@@ -52,7 +55,7 @@ interface ServiceAccount {
   note: string | null
   accountId: string | null
   account: LinkedAccount | null
-  members: Member[]
+  memberLinks: MemberLink[]
 }
 
 type SharedValue = 'none' | '프로젝트계정' | '공유계정'
@@ -170,8 +173,8 @@ function emptyAdd(): AddDraft {
 // Sub-components
 // ---------------------------------------------------------------------------
 
-function MemberSubTable({ members }: { members: Member[] }) {
-  if (members.length === 0) {
+function MemberSubTable({ memberLinks }: { memberLinks: MemberLink[] }) {
+  if (memberLinks.length === 0) {
     return (
       <tr>
         <td colSpan={9}>
@@ -195,12 +198,12 @@ function MemberSubTable({ members }: { members: Member[] }) {
               </tr>
             </thead>
             <tbody>
-              {members.map((m) => (
-                <tr key={m.id} className="border-t hover:bg-muted/20">
-                  <td className="px-3 py-2 font-medium">{m.name}</td>
-                  <td className="px-3 py-2 text-muted-foreground">{m.purpose ?? '-'}</td>
-                  <td className="px-3 py-2 text-muted-foreground">{formatDate(m.startDate)}</td>
-                  <td className="px-3 py-2 text-muted-foreground">{formatDate(m.endDate)}</td>
+              {memberLinks.map((link) => (
+                <tr key={link.id} className="border-t hover:bg-muted/20">
+                  <td className="px-3 py-2 font-medium">{link.member.name}</td>
+                  <td className="px-3 py-2 text-muted-foreground">{link.member.purpose ?? '-'}</td>
+                  <td className="px-3 py-2 text-muted-foreground">{formatDate(link.startDate)}</td>
+                  <td className="px-3 py-2 text-muted-foreground">{formatDate(link.endDate)}</td>
                 </tr>
               ))}
             </tbody>
@@ -651,9 +654,9 @@ export function ServiceAccountsTable({ initialData, monitoringAccounts }: Props)
                         <button
                           className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
                           onClick={() => toggleExpand(acc.id)}
-                          aria-label={`멤버 ${acc.members.length}명`}
+                          aria-label={`멤버 ${acc.memberLinks.length}명`}
                         >
-                          <span>{acc.members.length}</span>
+                          <span>{acc.memberLinks.length}</span>
                           <span className="text-xs">명</span>
                         </button>
                       </td>
@@ -698,7 +701,7 @@ export function ServiceAccountsTable({ initialData, monitoringAccounts }: Props)
                       </td>
                     </tr>
 
-                    {isExpanded && <MemberSubTable key={`${acc.id}-members`} members={acc.members} />}
+                    {isExpanded && <MemberSubTable key={`${acc.id}-members`} memberLinks={acc.memberLinks} />}
                   </>
                 )
               })}

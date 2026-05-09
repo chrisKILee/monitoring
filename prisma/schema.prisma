@@ -25,34 +25,47 @@ model Account {
 }
 
 model ServiceAccount {
-  id          String   @id @default(cuid())
-  accountName String   @unique
+  id          String                 @id @default(cuid())
+  accountName String                 @unique
   phoneAuth   String?
   isShared    String?
   note        String?
   service     String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
   accountId   String?
   alias       String?
-  members     Member[]
-  account     Account? @relation(fields: [accountId], references: [id])
+  memberLinks MemberServiceAccount[]
+  account     Account?               @relation(fields: [accountId], references: [id])
 
   @@index([accountId])
   @@map("service_account")
 }
 
 model Member {
-  id              String           @id @default(cuid())
+  id              String                 @id @default(cuid())
   name            String
   purpose         String?
-  startDate       DateTime?
-  endDate         DateTime?
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  serviceAccounts ServiceAccount[]
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+  serviceAccounts MemberServiceAccount[]
+}
 
+model MemberServiceAccount {
+  id               String         @id @default(cuid())
+  memberId         String
+  serviceAccountId String
+  startDate        DateTime?
+  endDate          DateTime?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  member           Member         @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  serviceAccount   ServiceAccount @relation(fields: [serviceAccountId], references: [id], onDelete: Cascade)
+
+  @@unique([memberId, serviceAccountId])
+  @@index([serviceAccountId])
   @@index([endDate])
+  @@map("member_service_account")
 }
 
 model UsageLog {

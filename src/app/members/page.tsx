@@ -9,8 +9,8 @@ export default async function MembersPage() {
       orderBy: { createdAt: 'asc' },
       include: {
         serviceAccounts: {
-          select: { id: true, accountName: true, service: true },
-          orderBy: { accountName: 'asc' },
+          include: { serviceAccount: { select: { id: true, accountName: true, service: true } } },
+          orderBy: { serviceAccount: { accountName: 'asc' } },
         },
       },
     }),

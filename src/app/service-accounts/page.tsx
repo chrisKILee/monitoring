@@ -15,9 +15,9 @@ export default async function ServiceAccountsPage() {
     prisma.serviceAccount.findMany({
       include: {
         account: { select: { id: true, name: true, alias: true, isActive: true, lastError: true } },
-        members: {
-          select: { id: true, name: true, purpose: true, startDate: true, endDate: true },
-          orderBy: { name: 'asc' },
+        memberLinks: {
+          include: { member: { select: { id: true, name: true, purpose: true } } },
+          orderBy: { member: { name: 'asc' } },
         },
       },
     }),

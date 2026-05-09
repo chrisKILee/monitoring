@@ -6,8 +6,8 @@ export async function GET() {
     orderBy: { createdAt: 'asc' },
     include: {
       serviceAccounts: {
-        select: { id: true, accountName: true, service: true },
-        orderBy: { accountName: 'asc' },
+        include: { serviceAccount: { select: { id: true, accountName: true, service: true } } },
+        orderBy: { serviceAccount: { accountName: 'asc' } },
       },
     },
   })
@@ -20,22 +20,14 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: '이름은 필수입니다' }, { status: 400 })
   }
 
-  const serviceAccountIds: string[] = body.serviceAccountIds ?? []
-
   const member = await prisma.member.create({
     data: {
       name: body.name.trim(),
       purpose: body.purpose ?? null,
-      startDate: body.startDate ? new Date(body.startDate) : null,
-      endDate: body.endDate ? new Date(body.endDate) : null,
-      serviceAccounts: serviceAccountIds.length > 0
-        ? { connect: serviceAccountIds.map((id) => ({ id })) }
-        : undefined,
     },
     include: {
       serviceAccounts: {
-        select: { id: true, accountName: true, service: true },
-        orderBy: { accountName: 'asc' },
+        include: { serviceAccount: { select: { id: true, accountName: true, service: true } } },
       },
     },
   })
