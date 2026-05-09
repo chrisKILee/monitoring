@@ -1,11 +1,6 @@
-import { auth } from '@/auth'
-import { redirect } from 'next/navigation'
 import { SignInButton } from '@/components/auth/SignInButton'
 
-export default async function SignInPage() {
-  const session = await auth()
-  if (session?.user?.id) redirect('/dashboard')
-
+export default function SignInPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
       <div className="w-full max-w-sm space-y-6 p-8 border rounded-xl shadow-sm bg-card">
