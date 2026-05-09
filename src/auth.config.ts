@@ -8,17 +8,20 @@ export const authConfig: NextAuthConfig = {
     error: '/auth/error',
   },
   callbacks: {
+    session({ session, token }) {
+      if (token.userId) session.user.id = token.userId as string
+      if (token.role) session.user.role = token.role as string
+      return session
+    },
     authorized({ auth, request }) {
       const { pathname } = request.nextUrl
 
-      // Not authenticated → explicit redirect to sign-in
       if (!auth?.user) {
         const signInUrl = new URL('/auth/signin', request.url)
         signInUrl.searchParams.set('callbackUrl', pathname)
         return NextResponse.redirect(signInUrl)
       }
 
-      // Admin-only path guard
       if (pathname.startsWith('/admin') && auth.user.role !== 'admin') {
         return NextResponse.redirect(new URL('/dashboard', request.url))
       }
