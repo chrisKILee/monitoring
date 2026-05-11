@@ -145,7 +145,7 @@ function AccountSubTable({
     if (addForm.serviceAccountId === 'none') return
     setSaving(true)
     try {
-      await fetch(`/api/members/${member.id}/accounts`, {
+      const res = await fetch(`/api/members/${member.id}/accounts`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -154,6 +154,11 @@ function AccountSubTable({
           endDate: addForm.endDate || null,
         }),
       })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        alert(`계정 추가 실패: ${err.error ?? res.status}`)
+        return
+      }
       setAddOpen(false)
       setAddForm({ serviceAccountId: 'none', startDate: '', endDate: '' })
       onRefresh()
