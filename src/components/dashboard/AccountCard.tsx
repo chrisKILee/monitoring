@@ -40,6 +40,39 @@ export interface AccountLatest {
     fetchedAt: string
   } | null
   recentLogs: RecentLog[]
+  members: string[]
+}
+
+function MembersAccordion({ members }: { members: string[] }) {
+  const [open, setOpen] = useState(false)
+  if (members.length === 0) return null
+
+  const panelId = `members-panel-${members.length}-${members[0]}`
+
+  return (
+    <div className="border-t pt-2">
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        aria-expanded={open}
+        aria-controls={panelId}
+        className="flex w-full items-center justify-between text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+      >
+        <span>멤버 {members.length}명</span>
+        <span className={`text-[10px] transition-transform ${open ? 'rotate-180' : ''}`}>▼</span>
+      </button>
+      {open && (
+        <ul id={panelId} className="mt-1.5 space-y-0.5 pl-2">
+          {members.map(name => (
+            <li key={name} className="text-xs text-foreground/90">
+              <span className="text-muted-foreground mr-1">•</span>
+              {name}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
 }
 
 function StatusBadge({ account }: { account: AccountLatest }) {
@@ -338,14 +371,19 @@ export function AccountCard({ account }: { account: AccountLatest }) {
               </div>
             )}
 
+            <MembersAccordion members={account.members} />
+
             <p className="text-xs text-muted-foreground text-right">
               {new Date(latest.fetchedAt).toLocaleString('ko-KR')}
             </p>
           </>
         ) : (
-          <p className="text-sm text-muted-foreground py-4 text-center">
-            {account.lastError ? `오류: ${account.lastError}` : '아직 수집된 데이터가 없습니다'}
-          </p>
+          <>
+            <p className="text-sm text-muted-foreground py-4 text-center">
+              {account.lastError ? `오류: ${account.lastError}` : '아직 수집된 데이터가 없습니다'}
+            </p>
+            <MembersAccordion members={account.members} />
+          </>
         )}
       </CardContent>
     </Card>
