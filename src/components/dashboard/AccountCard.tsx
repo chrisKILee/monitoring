@@ -343,6 +343,8 @@ export function AccountCard({ account }: { account: AccountLatest }) {
         <p className="text-xs text-muted-foreground font-mono truncate">{account.orgId}</p>
       </CardHeader>
       <CardContent className="space-y-3">
+        <MembersAccordion members={account.members} />
+
         {latest ? (
           <>
             <Segmented5hBar
@@ -371,19 +373,14 @@ export function AccountCard({ account }: { account: AccountLatest }) {
               </div>
             )}
 
-            <MembersAccordion members={account.members} />
-
             <p className="text-xs text-muted-foreground text-right">
               {new Date(latest.fetchedAt).toLocaleString('ko-KR')}
             </p>
           </>
         ) : (
-          <>
-            <p className="text-sm text-muted-foreground py-4 text-center">
-              {account.lastError ? `오류: ${account.lastError}` : '아직 수집된 데이터가 없습니다'}
-            </p>
-            <MembersAccordion members={account.members} />
-          </>
+          <p className="text-sm text-muted-foreground py-4 text-center">
+            {account.lastError ? `오류: ${account.lastError}` : '아직 수집된 데이터가 없습니다'}
+          </p>
         )}
       </CardContent>
     </Card>
