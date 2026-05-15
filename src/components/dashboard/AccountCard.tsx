@@ -45,7 +45,14 @@ export interface AccountLatest {
 
 function MembersAccordion({ members }: { members: string[] }) {
   const [open, setOpen] = useState(false)
-  if (members.length === 0) return null
+
+  if (members.length === 0) {
+    return (
+      <div className="border-t pt-2">
+        <p className="text-xs text-muted-foreground">멤버 0명</p>
+      </div>
+    )
+  }
 
   const panelId = `members-panel-${members.length}-${members[0]}`
 
