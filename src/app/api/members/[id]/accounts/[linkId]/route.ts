@@ -10,6 +10,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
   const updated = await prisma.memberServiceAccount.update({
     where: { id: linkId },
     data: {
+      ...(body.serviceAccountId !== undefined && { serviceAccountId: body.serviceAccountId }),
       ...(body.startDate !== undefined && {
         startDate: body.startDate ? new Date(body.startDate) : null,
       }),

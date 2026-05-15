@@ -109,6 +109,8 @@ function AccountSubTable({
   const [editDates, setEditDates] = useState({ startDate: '', endDate: '' })
   const [addOpen, setAddOpen] = useState(false)
   const [addForm, setAddForm] = useState({ serviceAccountId: 'none', startDate: '', endDate: '' })
+  const [changingLink, setChangingLink] = useState<AccountLink | null>(null)
+  const [changeToSaId, setChangeToSaId] = useState<string>('none')
   const [saving, setSaving] = useState(false)
 
   const usedIds = new Set(member.serviceAccounts.map(l => l.serviceAccountId))
@@ -138,6 +140,26 @@ function AccountSubTable({
   async function removeLink(linkId: string) {
     await fetch(`/api/members/${member.id}/accounts/${linkId}`, { method: 'DELETE' })
     onRefresh()
+  }
+
+  async function changeLink() {
+    if (!changingLink || changeToSaId === 'none') return
+    setSaving(true)
+    try {
+      const res = await fetch(`/api/members/${member.id}/accounts/${changingLink.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ serviceAccountId: changeToSaId }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        alert(`계정 변경 실패: ${err.error ?? res.status}`)
+        return
+      }
+      setChangingLink(null)
+      setChangeToSaId('none')
+      onRefresh()
+    } finally { setSaving(false) }
   }
 
   async function addLink(e: React.FormEvent) {
@@ -214,6 +236,16 @@ function AccountSubTable({
                         ) : (
                           <>
                             <Button size="sm" variant="outline" className="h-6 text-xs px-2" onClick={() => startEditLink(link)}>수정</Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-6 text-xs px-2"
+                              onClick={() => { setChangingLink(link); setChangeToSaId('none') }}
+                              disabled={available.length === 0}
+                              title={available.length === 0 ? '변경 가능한 계정 없음' : '계정 변경'}
+                            >
+                              변경
+                            </Button>
                             <Button size="sm" variant="destructive" className="h-6 text-xs px-2" onClick={() => removeLink(link.id)}>제거</Button>
                           </>
                         )}
@@ -236,6 +268,39 @@ function AccountSubTable({
           </Button>
         </div>
       </td>
+
+      {/* 계정 변경 Dialog */}
+      <Dialog open={!!changingLink} onOpenChange={open => { if (!open) { setChangingLink(null); setChangeToSaId('none') } }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>{member.name} — 계정 변경</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 mt-1">
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground">
+                현재: <span className="font-medium text-foreground">{changingLink?.serviceAccount.accountName}</span>
+              </p>
+            </div>
+            <div className="space-y-1">
+              <Label>변경할 계정</Label>
+              <Select value={changeToSaId} onValueChange={(v: string | null) => setChangeToSaId(v ?? 'none')}>
+                <SelectTrigger><SelectValue placeholder="선택" /></SelectTrigger>
+                <SelectContent>
+                  {available.map(sa => (
+                    <SelectItem key={sa.id} value={sa.id}>
+                      {sa.accountName} ({sa.service})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => { setChangingLink(null); setChangeToSaId('none') }}>취소</Button>
+              <Button onClick={changeLink} disabled={saving || changeToSaId === 'none'}>변경</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={addOpen} onOpenChange={open => { if (!open) setAddOpen(false) }}>
         <DialogContent className="max-w-sm">
