@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -83,10 +83,20 @@ function StatusBadge({ account }: { account: AccountLatest }) {
   return <Badge className="bg-green-500 text-white">정상</Badge>
 }
 
-function resetLabel(resetAt: string | null): string {
-  if (!resetAt) return ''
+function useNow(): number | null {
+  const [now, setNow] = useState<number | null>(null)
+  useEffect(() => {
+    setNow(Date.now())
+    const t = setInterval(() => setNow(Date.now()), 60_000)
+    return () => clearInterval(t)
+  }, [])
+  return now
+}
+
+function resetLabel(resetAt: string | null, now: number | null): string {
+  if (!resetAt || now === null) return ''
   const d = new Date(resetAt)
-  const diff = d.getTime() - Date.now()
+  const diff = d.getTime() - now
   if (diff <= 0) return '곧 초기화'
   const h = Math.floor(diff / 3_600_000)
   const m = Math.floor((diff % 3_600_000) / 60_000)
@@ -95,9 +105,9 @@ function resetLabel(resetAt: string | null): string {
   return `${m}m 후 초기화`
 }
 
-function timeElapsedPct(resetAt: string | null, windowMs: number): number {
-  if (!resetAt) return 0
-  const remaining = new Date(resetAt).getTime() - Date.now()
+function timeElapsedPct(resetAt: string | null, windowMs: number, now: number | null): number {
+  if (!resetAt || now === null) return 0
+  const remaining = new Date(resetAt).getTime() - now
   const elapsed = Math.max(0, windowMs - remaining)
   return Math.min(100, (elapsed / windowMs) * 100)
 }
@@ -107,13 +117,15 @@ function Segmented5hBar({
   value,
   resetAt,
   danger,
+  now,
 }: {
   value: number | null
   resetAt: string | null
   danger?: boolean
+  now: number | null
 }) {
   const pct = value ?? 0
-  const timePct = timeElapsedPct(resetAt, 5 * 60 * 60 * 1000)
+  const timePct = timeElapsedPct(resetAt, 5 * 60 * 60 * 1000, now)
 
   const barColor =
     pct >= 90 ? 'bg-red-500' :
@@ -144,8 +156,8 @@ function Segmented5hBar({
             style={{ left: `${tick}%` }}
           />
         ))}
-        {/* 현재 시간 커서 */}
-        {resetAt && (
+        {/* 현재 시간 커서 — hydration safe: now가 마운트 후에만 표시 */}
+        {resetAt && now !== null && (
           <div
             className="absolute top-0 bottom-0 w-0.5 bg-white/90 shadow"
             style={{ left: `${timePct}%` }}
@@ -158,8 +170,8 @@ function Segmented5hBar({
         {[0, 1, 2, 3, 4, 5].map(h => <span key={h}>{h}h</span>)}
       </div>
 
-      {resetAt && (
-        <p className="text-[10px] text-muted-foreground text-right">{resetLabel(resetAt)}</p>
+      {resetAt && now !== null && (
+        <p className="text-[10px] text-muted-foreground text-right">{resetLabel(resetAt, now)}</p>
       )}
     </div>
   )
@@ -170,21 +182,23 @@ function Grid7dBar({
   label,
   value,
   resetAt,
+  now,
 }: {
   label: string
   value: number | null
   resetAt: string | null
+  now: number | null
 }) {
   const pct = value ?? 0
 
   const { daysPassed, dayFraction } = useMemo(() => {
-    if (!resetAt) return { daysPassed: 0, dayFraction: 0 }
-    const remaining = new Date(resetAt).getTime() - Date.now()
+    if (!resetAt || now === null) return { daysPassed: 0, dayFraction: 0 }
+    const remaining = new Date(resetAt).getTime() - now
     const total = 7 * 24 * 60 * 60 * 1000
     const elapsed = Math.max(0, total - remaining)
     const days = elapsed / (24 * 60 * 60 * 1000)
     return { daysPassed: Math.floor(days), dayFraction: days % 1 }
-  }, [resetAt])
+  }, [resetAt, now])
 
   const timePct = ((daysPassed + dayFraction) / 7) * 100
   const cellWidth = 100 / 7
@@ -234,23 +248,25 @@ function Grid7dBar({
         })}
       </div>
 
-      {resetAt && (
-        <p className="text-[10px] text-muted-foreground text-right">{resetLabel(resetAt)}</p>
+      {resetAt && now !== null && (
+        <p className="text-[10px] text-muted-foreground text-right">{resetLabel(resetAt, now)}</p>
       )}
     </div>
   )
 }
 
-function Usage48hChart({ logs }: { logs: RecentLog[] }) {
+function Usage48hChart({ logs, mounted }: { logs: RecentLog[]; mounted: boolean }) {
   const data = logs
     .filter(l => l.utilization7d !== null)
     .map(l => ({
-      time: new Date(l.fetchedAt).toLocaleString('ko-KR', {
-        month: 'numeric',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      }),
+      time: mounted
+        ? new Date(l.fetchedAt).toLocaleString('ko-KR', {
+            month: 'numeric',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+          })
+        : new Date(l.fetchedAt).toISOString().slice(5, 16),
       pct: l.utilization7d as number,
     }))
 
@@ -305,6 +321,7 @@ export function AccountCard({ account }: { account: AccountLatest }) {
   const latest = account.latest
   const router = useRouter()
   const [syncing, setSyncing] = useState(false)
+  const now = useNow()
 
   async function handleSync() {
     setSyncing(true)
@@ -351,19 +368,22 @@ export function AccountCard({ account }: { account: AccountLatest }) {
               value={latest.utilization5h}
               resetAt={latest.resetAt5h}
               danger
+              now={now}
             />
             <Grid7dBar
               label="7일 (전체)"
               value={latest.utilization7d}
               resetAt={latest.resetAt7d}
+              now={now}
             />
             <Grid7dBar
               label="7일 (Sonnet)"
               value={latest.utilization7dSonnet}
               resetAt={latest.resetAt7dSonnet}
+              now={now}
             />
 
-            <Usage48hChart logs={account.recentLogs} />
+            <Usage48hChart logs={account.recentLogs} mounted={now !== null} />
 
             {(latest.predictExceed5h || latest.predictExceed7d) && (
               <div className="rounded-md bg-destructive/10 p-2 text-xs text-destructive">
@@ -374,7 +394,7 @@ export function AccountCard({ account }: { account: AccountLatest }) {
             )}
 
             <p className="text-xs text-muted-foreground text-right">
-              {new Date(latest.fetchedAt).toLocaleString('ko-KR')}
+              {now !== null ? new Date(latest.fetchedAt).toLocaleString('ko-KR') : new Date(latest.fetchedAt).toISOString().slice(0, 16).replace('T', ' ')}
             </p>
           </>
         ) : (
