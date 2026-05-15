@@ -36,6 +36,7 @@ interface AccountLink {
 interface Member {
   id: string
   name: string
+  department: string | null
   purpose: string | null
   serviceAccounts: AccountLink[]
 }
@@ -355,11 +356,11 @@ export function MembersTable({ initialMembers, initialServiceAccounts }: Members
   const [serviceAccounts] = useState<ServiceAccount[]>(initialServiceAccounts)
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [editState, setEditState] = useState({ name: '', purpose: '' })
+  const [editState, setEditState] = useState({ name: '', department: '', purpose: '' })
   const [saving, setSaving] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [addOpen, setAddOpen] = useState(false)
-  const [addForm, setAddForm] = useState({ name: '', purpose: '' })
+  const [addForm, setAddForm] = useState({ name: '', department: '', purpose: '' })
   const [addLoading, setAddLoading] = useState(false)
 
   useEffect(() => { setMembers(initialMembers) }, [initialMembers])
@@ -381,7 +382,7 @@ export function MembersTable({ initialMembers, initialServiceAccounts }: Members
 
   function startEdit(member: Member) {
     setEditingId(member.id)
-    setEditState({ name: member.name, purpose: member.purpose ?? '' })
+    setEditState({ name: member.name, department: member.department ?? '', purpose: member.purpose ?? '' })
     setExpandedIds(prev => new Set(prev).add(member.id))
   }
 
@@ -391,7 +392,7 @@ export function MembersTable({ initialMembers, initialServiceAccounts }: Members
       await fetch(`/api/members/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: editState.name.trim(), purpose: editState.purpose.trim() || null }),
+        body: JSON.stringify({ name: editState.name.trim(), department: editState.department.trim() || null, purpose: editState.purpose.trim() || null }),
       })
       setEditingId(null)
       await refresh()
@@ -415,11 +416,11 @@ export function MembersTable({ initialMembers, initialServiceAccounts }: Members
       const res = await fetch('/api/members', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: addForm.name.trim(), purpose: addForm.purpose.trim() || null }),
+        body: JSON.stringify({ name: addForm.name.trim(), department: addForm.department.trim() || null, purpose: addForm.purpose.trim() || null }),
       })
       const newMember = await res.json() as Member
       setAddOpen(false)
-      setAddForm({ name: '', purpose: '' })
+      setAddForm({ name: '', department: '', purpose: '' })
       await refresh()
       // 새 멤버 자동 expand
       setExpandedIds(prev => new Set(prev).add(newMember.id))
@@ -448,6 +449,7 @@ export function MembersTable({ initialMembers, initialServiceAccounts }: Members
               <tr>
                 <th className="w-8 p-3" />
                 <th className="text-left p-3 font-medium">이름</th>
+                <th className="text-left p-3 font-medium hidden lg:table-cell">부서</th>
                 <th className="text-left p-3 font-medium hidden md:table-cell">목적</th>
                 <th className="text-left p-3 font-medium hidden sm:table-cell">사용 계정 수</th>
                 <th className="text-right p-3 font-medium">액션</th>
@@ -484,6 +486,21 @@ export function MembersTable({ initialMembers, initialServiceAccounts }: Members
                           />
                         ) : (
                           <span className="font-medium">{member.name}</span>
+                        )}
+                      </td>
+
+                      {/* 부서 */}
+                      <td className="p-3 hidden lg:table-cell" onClick={e => isEditing && e.stopPropagation()}>
+                        {isEditing ? (
+                          <Input
+                            value={editState.department}
+                            onChange={e => setEditState(s => ({ ...s, department: e.target.value }))}
+                            className="h-7 text-sm w-32"
+                            placeholder="부서명"
+                            onClick={e => e.stopPropagation()}
+                          />
+                        ) : (
+                          <span className="text-muted-foreground text-xs">{member.department ?? '-'}</span>
                         )}
                       </td>
 
@@ -570,6 +587,15 @@ export function MembersTable({ initialMembers, initialServiceAccounts }: Members
                 onChange={e => setAddForm(s => ({ ...s, name: e.target.value }))}
                 placeholder="예: 홍길동"
                 required
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="add-department">부서명</Label>
+              <Input
+                id="add-department"
+                value={addForm.department}
+                onChange={e => setAddForm(s => ({ ...s, department: e.target.value }))}
+                placeholder="예: 서비스개발팀"
               />
             </div>
             <div className="space-y-1">

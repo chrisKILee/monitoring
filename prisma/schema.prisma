@@ -45,6 +45,7 @@ model ServiceAccount {
 model Member {
   id              String                 @id @default(cuid())
   name            String
+  department      String?
   purpose         String?
   createdAt       DateTime               @default(now())
   updatedAt       DateTime               @updatedAt

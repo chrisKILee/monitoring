@@ -23,6 +23,7 @@ export async function POST(req: Request) {
   const member = await prisma.member.create({
     data: {
       name: body.name.trim(),
+      department: body.department ?? null,
       purpose: body.purpose ?? null,
     },
     include: {

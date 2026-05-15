@@ -13,6 +13,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
     where: { id },
     data: {
       ...(body.name !== undefined && { name: body.name }),
+      ...(body.department !== undefined && { department: body.department }),
       ...(body.purpose !== undefined && { purpose: body.purpose }),
     },
     include: {
