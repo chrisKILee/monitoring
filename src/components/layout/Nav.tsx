@@ -30,6 +30,7 @@ export function Nav() {
     { href: '/service-accounts', label: '계정 관리', always: isAdmin },
     { href: '/accounts', label: '모니터링 계정', always: isAdmin },
     { href: '/admin', label: '관리계정 관리', always: isAdmin, adminOnly: true },
+    { href: '/themes', label: '테마', always: isAdmin, adminOnly: true },
   ].filter((l) => l.always)
 
   return (

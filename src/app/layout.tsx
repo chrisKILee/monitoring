@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { Nav } from "@/components/layout/Nav";
 import { SessionWrapper } from "@/components/layout/SessionWrapper";
+import { getCurrentTheme } from "@/lib/theme";
 import "./globals.css";
 
 const pretendard = localFont({
@@ -20,9 +21,11 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const theme = await getCurrentTheme();
+
   return (
-    <html lang="ko" className={`${pretendard.variable} h-full antialiased`}>
+    <html lang="ko" className={`${pretendard.variable} h-full antialiased`} data-theme={theme}>
       <body className="min-h-full flex flex-col font-[family-name:var(--font-pretendard)]">
         <SessionWrapper>
           <Nav />

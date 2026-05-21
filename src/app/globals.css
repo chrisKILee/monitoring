@@ -128,3 +128,169 @@
     @apply font-sans;
   }
 }
+
+/* =============================================
+   DB 기반 글로벌 테마 (data-theme 속성)
+   ============================================= */
+
+[data-theme="vercel-dark"] {
+  --background: oklch(0.09 0 0);
+  --foreground: oklch(0.95 0 0);
+  --card: oklch(0.12 0 0);
+  --card-foreground: oklch(0.95 0 0);
+  --popover: oklch(0.12 0 0);
+  --popover-foreground: oklch(0.95 0 0);
+  --primary: oklch(0.95 0 0);
+  --primary-foreground: oklch(0.09 0 0);
+  --secondary: oklch(0.18 0 0);
+  --secondary-foreground: oklch(0.95 0 0);
+  --muted: oklch(0.18 0 0);
+  --muted-foreground: oklch(0.55 0 0);
+  --accent: oklch(0.18 0 0);
+  --accent-foreground: oklch(0.95 0 0);
+  --destructive: oklch(0.65 0.22 25);
+  --border: oklch(0.22 0 0);
+  --input: oklch(0.22 0 0);
+  --ring: oklch(0.5 0 0);
+  --radius: 0.25rem;
+  --chart-1: oklch(0.7 0.15 262);
+  --chart-2: oklch(0.65 0.15 142);
+  --chart-3: oklch(0.65 0.18 55);
+  --chart-4: oklch(0.65 0.18 25);
+  --chart-5: oklch(0.5 0 0);
+  --sidebar: oklch(0.12 0 0);
+  --sidebar-foreground: oklch(0.95 0 0);
+  --sidebar-primary: oklch(0.95 0 0);
+  --sidebar-primary-foreground: oklch(0.09 0 0);
+  --sidebar-accent: oklch(0.18 0 0);
+  --sidebar-accent-foreground: oklch(0.95 0 0);
+  --sidebar-border: oklch(0.22 0 0);
+  --sidebar-ring: oklch(0.5 0 0);
+}
+
+[data-theme="claude-purple"] {
+  --background: oklch(0.1 0.03 280);
+  --foreground: oklch(0.95 0.01 280);
+  --card: oklch(0.14 0.04 280);
+  --card-foreground: oklch(0.95 0.01 280);
+  --popover: oklch(0.14 0.04 280);
+  --popover-foreground: oklch(0.95 0.01 280);
+  --primary: oklch(0.65 0.25 290);
+  --primary-foreground: oklch(0.98 0 0);
+  --secondary: oklch(0.2 0.05 280);
+  --secondary-foreground: oklch(0.9 0.01 280);
+  --muted: oklch(0.2 0.05 280);
+  --muted-foreground: oklch(0.6 0.05 280);
+  --accent: oklch(0.65 0.25 290);
+  --accent-foreground: oklch(0.98 0 0);
+  --destructive: oklch(0.65 0.22 25);
+  --border: oklch(0.25 0.06 280);
+  --input: oklch(0.2 0.05 280);
+  --ring: oklch(0.65 0.25 290);
+  --radius: 0.875rem;
+  --chart-1: oklch(0.65 0.25 290);
+  --chart-2: oklch(0.65 0.2 210);
+  --chart-3: oklch(0.65 0.18 142);
+  --chart-4: oklch(0.65 0.18 55);
+  --chart-5: oklch(0.5 0.1 280);
+  --sidebar: oklch(0.14 0.04 280);
+  --sidebar-foreground: oklch(0.95 0.01 280);
+  --sidebar-primary: oklch(0.65 0.25 290);
+  --sidebar-primary-foreground: oklch(0.98 0 0);
+  --sidebar-accent: oklch(0.2 0.05 280);
+  --sidebar-accent-foreground: oklch(0.9 0.01 280);
+  --sidebar-border: oklch(0.25 0.06 280);
+  --sidebar-ring: oklch(0.65 0.25 290);
+}
+
+[data-theme="nord"] {
+  --background: oklch(0.28 0.025 240);
+  --foreground: oklch(0.92 0.01 215);
+  --card: oklch(0.32 0.025 240);
+  --card-foreground: oklch(0.92 0.01 215);
+  --popover: oklch(0.32 0.025 240);
+  --popover-foreground: oklch(0.92 0.01 215);
+  --primary: oklch(0.72 0.1 210);
+  --primary-foreground: oklch(0.15 0.02 240);
+  --secondary: oklch(0.38 0.025 240);
+  --secondary-foreground: oklch(0.9 0.01 215);
+  --muted: oklch(0.36 0.02 240);
+  --muted-foreground: oklch(0.65 0.02 220);
+  --accent: oklch(0.72 0.1 210);
+  --accent-foreground: oklch(0.15 0.02 240);
+  --destructive: oklch(0.65 0.15 25);
+  --border: oklch(0.38 0.02 240);
+  --input: oklch(0.36 0.02 240);
+  --ring: oklch(0.72 0.1 210);
+  --radius: 0.5rem;
+  --chart-1: oklch(0.72 0.1 210);
+  --chart-2: oklch(0.7 0.12 170);
+  --chart-3: oklch(0.7 0.1 240);
+  --chart-4: oklch(0.65 0.08 280);
+  --chart-5: oklch(0.5 0.02 230);
+  --sidebar: oklch(0.32 0.025 240);
+  --sidebar-foreground: oklch(0.92 0.01 215);
+  --sidebar-primary: oklch(0.72 0.1 210);
+  --sidebar-primary-foreground: oklch(0.15 0.02 240);
+  --sidebar-accent: oklch(0.38 0.025 240);
+  --sidebar-accent-foreground: oklch(0.9 0.01 215);
+  --sidebar-border: oklch(0.38 0.02 240);
+  --sidebar-ring: oklch(0.72 0.1 210);
+}
+
+[data-theme="light-clean"] {
+  --background: oklch(0.97 0 0);
+  --foreground: oklch(0.12 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.12 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.12 0 0);
+  --primary: oklch(0.45 0.18 262);
+  --primary-foreground: oklch(0.98 0 0);
+  --secondary: oklch(0.94 0 0);
+  --secondary-foreground: oklch(0.2 0 0);
+  --muted: oklch(0.94 0 0);
+  --muted-foreground: oklch(0.5 0 0);
+  --accent: oklch(0.94 0.02 262);
+  --accent-foreground: oklch(0.3 0.1 262);
+  --destructive: oklch(0.55 0.22 25);
+  --border: oklch(0.88 0 0);
+  --input: oklch(0.88 0 0);
+  --ring: oklch(0.6 0.1 262);
+  --radius: 0.625rem;
+  --chart-1: oklch(0.55 0.18 262);
+  --chart-2: oklch(0.55 0.15 142);
+  --chart-3: oklch(0.55 0.15 55);
+  --chart-4: oklch(0.55 0.15 25);
+  --chart-5: oklch(0.6 0 0);
+  --sidebar: oklch(1 0 0);
+  --sidebar-foreground: oklch(0.12 0 0);
+  --sidebar-primary: oklch(0.45 0.18 262);
+  --sidebar-primary-foreground: oklch(0.98 0 0);
+  --sidebar-accent: oklch(0.94 0.02 262);
+  --sidebar-accent-foreground: oklch(0.3 0.1 262);
+  --sidebar-border: oklch(0.88 0 0);
+  --sidebar-ring: oklch(0.6 0.1 262);
+}
+
+/* 테마별 카드 스타일 차별화 */
+[data-theme="vercel-dark"] .card-themed,
+[data-theme="vercel-dark"] [data-slot="card"] {
+  box-shadow: none;
+  border-color: oklch(0.22 0 0);
+}
+
+[data-theme="claude-purple"] .card-themed,
+[data-theme="claude-purple"] [data-slot="card"] {
+  box-shadow: 0 0 0 1px oklch(0.65 0.25 290 / 0.15), 0 4px 24px oklch(0.65 0.25 290 / 0.08);
+}
+
+[data-theme="nord"] .card-themed,
+[data-theme="nord"] [data-slot="card"] {
+  box-shadow: 0 2px 8px oklch(0 0 0 / 0.3);
+}
+
+[data-theme="light-clean"] .card-themed,
+[data-theme="light-clean"] [data-slot="card"] {
+  box-shadow: 0 1px 3px oklch(0 0 0 / 0.08), 0 4px 12px oklch(0 0 0 / 0.04);
+}

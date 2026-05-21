@@ -131,3 +131,11 @@ model AlertLog {
   @@index([accountId, sentAt(sort: Desc)])
   @@index([alertType, sentAt(sort: Desc)])
 }
+
+model Setting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+
+  @@map("setting")
+}
