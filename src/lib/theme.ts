@@ -1,19 +1,19 @@
 import { prisma } from '@/lib/prisma'
 
-export type ThemeId = 'vercel-dark' | 'claude-purple' | 'nord' | 'light-clean'
+export type ThemeId = 'linear' | 'stripe' | 'nord' | 'light-clean'
 
 export const THEMES = [
   {
-    id: 'vercel-dark' as ThemeId,
-    name: 'Vercel Dark',
-    description: '블랙 + Vercel 블루 — 미니멀 대시보드',
-    preview: { bg: '#000000', card: '#0a0a0a', primary: '#0070f3', accent: '#a1a1a1' },
+    id: 'linear' as ThemeId,
+    name: 'Linear',
+    description: '딥 블랙 + 라벤더 블루 — Linear 디자인 시스템',
+    preview: { bg: '#010102', card: '#0f1011', primary: '#5e6ad2', accent: '#8a8f98' },
   },
   {
-    id: 'claude-purple' as ThemeId,
-    name: 'Claude Purple',
-    description: '딥 퍼플 + 바이올렛 글로우',
-    preview: { bg: '#0d0b18', card: '#16132a', primary: '#c084fc', accent: '#818cf8' },
+    id: 'stripe' as ThemeId,
+    name: 'Stripe',
+    description: '크리스프 화이트 + 딥 퍼플 — Stripe 디자인 시스템',
+    preview: { bg: '#f6f9fc', card: '#ffffff', primary: '#533afd', accent: '#64748d' },
   },
   {
     id: 'nord' as ThemeId,
@@ -32,8 +32,10 @@ export const THEMES = [
 export async function getCurrentTheme(): Promise<ThemeId> {
   try {
     const setting = await prisma.setting.findUnique({ where: { key: 'theme' } })
-    return (setting?.value as ThemeId) ?? 'vercel-dark'
+    const value = setting?.value as ThemeId | undefined
+    const valid = THEMES.map(t => t.id) as readonly string[]
+    return (value && valid.includes(value) ? value : 'linear') as ThemeId
   } catch {
-    return 'vercel-dark'
+    return 'linear'
   }
 }

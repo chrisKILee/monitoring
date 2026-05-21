@@ -133,76 +133,76 @@
    DB 기반 글로벌 테마 (data-theme 속성)
    ============================================= */
 
-/* ── Vercel Dark: 순수 블랙 + Vercel 블루 액센트 ── */
-[data-theme="vercel-dark"] {
-  --background: #000000;
-  --foreground: #ededed;
-  --card: #0a0a0a;
-  --card-foreground: #ededed;
-  --popover: #111111;
-  --popover-foreground: #ededed;
-  --primary: #0070f3;
+/* ── Linear: 딥 블랙(#010102) + 라벤더 블루 — Linear 공식 팔레트 ── */
+[data-theme="linear"] {
+  --background: #010102;
+  --foreground: #f7f8f8;
+  --card: #0f1011;
+  --card-foreground: #f7f8f8;
+  --popover: #141516;
+  --popover-foreground: #f7f8f8;
+  --primary: #5e6ad2;
   --primary-foreground: #ffffff;
-  --secondary: #1a1a1a;
-  --secondary-foreground: #ededed;
-  --muted: #1a1a1a;
-  --muted-foreground: #a1a1a1;
-  --accent: #1a1a1a;
-  --accent-foreground: #ededed;
+  --secondary: #141516;
+  --secondary-foreground: #d0d6e0;
+  --muted: #18191a;
+  --muted-foreground: #8a8f98;
+  --accent: #5e6ad2;
+  --accent-foreground: #ffffff;
   --destructive: #ff4444;
-  --border: #2a2a2a;
-  --input: #1a1a1a;
-  --ring: #0070f3;
-  --radius: 0.375rem;
-  --chart-1: #0070f3;
-  --chart-2: #50e3c2;
+  --border: #23252a;
+  --input: #0f1011;
+  --ring: #5e6ad2;
+  --radius: 0.5rem;
+  --chart-1: #5e6ad2;
+  --chart-2: #27a644;
   --chart-3: #f5a623;
-  --chart-4: #ff0080;
-  --chart-5: #7928ca;
-  --sidebar: #0a0a0a;
-  --sidebar-foreground: #ededed;
-  --sidebar-primary: #0070f3;
+  --chart-4: #ff4444;
+  --chart-5: #828fff;
+  --sidebar: #0f1011;
+  --sidebar-foreground: #f7f8f8;
+  --sidebar-primary: #5e6ad2;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #1a1a1a;
-  --sidebar-accent-foreground: #ededed;
-  --sidebar-border: #2a2a2a;
-  --sidebar-ring: #0070f3;
+  --sidebar-accent: #18191a;
+  --sidebar-accent-foreground: #d0d6e0;
+  --sidebar-border: #23252a;
+  --sidebar-ring: #5e6ad2;
 }
 
-/* ── Claude Purple: 딥 퍼플 배경 + 바이올렛 글로우 ── */
-[data-theme="claude-purple"] {
-  --background: #0d0b18;
-  --foreground: #ede9f8;
-  --card: #16132a;
-  --card-foreground: #ede9f8;
-  --popover: #16132a;
-  --popover-foreground: #ede9f8;
-  --primary: #c084fc;
-  --primary-foreground: #1a0a3a;
-  --secondary: #221d38;
-  --secondary-foreground: #d4ccf0;
-  --muted: #221d38;
-  --muted-foreground: #9d8ec5;
-  --accent: #c084fc;
-  --accent-foreground: #1a0a3a;
-  --destructive: #f87171;
-  --border: #2e2650;
-  --input: #221d38;
-  --ring: #c084fc;
-  --radius: 0.75rem;
-  --chart-1: #c084fc;
-  --chart-2: #818cf8;
-  --chart-3: #34d399;
-  --chart-4: #fbbf24;
-  --chart-5: #f472b6;
-  --sidebar: #16132a;
-  --sidebar-foreground: #ede9f8;
-  --sidebar-primary: #c084fc;
-  --sidebar-primary-foreground: #1a0a3a;
-  --sidebar-accent: #221d38;
-  --sidebar-accent-foreground: #d4ccf0;
-  --sidebar-border: #2e2650;
-  --sidebar-ring: #c084fc;
+/* ── Stripe: 크리스프 화이트 + 딥 퍼플 — Stripe 공식 팔레트 ── */
+[data-theme="stripe"] {
+  --background: #f6f9fc;
+  --foreground: #0d253d;
+  --card: #ffffff;
+  --card-foreground: #0d253d;
+  --popover: #ffffff;
+  --popover-foreground: #0d253d;
+  --primary: #533afd;
+  --primary-foreground: #ffffff;
+  --secondary: #f6f9fc;
+  --secondary-foreground: #273951;
+  --muted: #f6f9fc;
+  --muted-foreground: #64748d;
+  --accent: #eef0fe;
+  --accent-foreground: #4434d4;
+  --destructive: #ea2261;
+  --border: #e3e8ee;
+  --input: #e3e8ee;
+  --ring: #533afd;
+  --radius: 0.5rem;
+  --chart-1: #533afd;
+  --chart-2: #27a644;
+  --chart-3: #f5a623;
+  --chart-4: #ea2261;
+  --chart-5: #f96bee;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #0d253d;
+  --sidebar-primary: #533afd;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #eef0fe;
+  --sidebar-accent-foreground: #4434d4;
+  --sidebar-border: #e3e8ee;
+  --sidebar-ring: #533afd;
 }
 
 /* ── Nord: 공식 Nord 팔레트 — 북유럽 블루그레이 ── */
@@ -278,15 +278,15 @@
 }
 
 /* ── 테마별 카드 스타일 차별화 ── */
-[data-theme="vercel-dark"] [data-slot="card"] {
+[data-theme="linear"] [data-slot="card"] {
   box-shadow: none;
-  border-color: #1f1f1f;
-  background: #0a0a0a;
+  border-color: #23252a;
+  background: #0f1011;
 }
 
-[data-theme="claude-purple"] [data-slot="card"] {
-  box-shadow: 0 0 0 1px rgba(192, 132, 252, 0.15), 0 8px 32px rgba(192, 132, 252, 0.07);
-  border-color: #2e2650;
+[data-theme="stripe"] [data-slot="card"] {
+  box-shadow: 0 2px 8px rgba(13, 37, 61, 0.06), 0 1px 2px rgba(13, 37, 61, 0.04);
+  border-color: #e3e8ee;
 }
 
 [data-theme="nord"] [data-slot="card"] {
@@ -300,14 +300,15 @@
 }
 
 /* ── Nav 테마별 스타일 ── */
-[data-theme="vercel-dark"] nav {
-  border-bottom-color: #1f1f1f;
-  background: #000000;
+[data-theme="linear"] nav {
+  border-bottom-color: #23252a;
+  background: #010102;
 }
 
-[data-theme="claude-purple"] nav {
-  border-bottom-color: #2e2650;
-  background: #16132a;
+[data-theme="stripe"] nav {
+  border-bottom-color: #e3e8ee;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(13, 37, 61, 0.06);
 }
 
 [data-theme="nord"] nav {
