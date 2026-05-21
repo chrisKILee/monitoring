@@ -133,164 +133,190 @@
    DB 기반 글로벌 테마 (data-theme 속성)
    ============================================= */
 
+/* ── Vercel Dark: 순수 블랙 + Vercel 블루 액센트 ── */
 [data-theme="vercel-dark"] {
-  --background: oklch(0.09 0 0);
-  --foreground: oklch(0.95 0 0);
-  --card: oklch(0.12 0 0);
-  --card-foreground: oklch(0.95 0 0);
-  --popover: oklch(0.12 0 0);
-  --popover-foreground: oklch(0.95 0 0);
-  --primary: oklch(0.95 0 0);
-  --primary-foreground: oklch(0.09 0 0);
-  --secondary: oklch(0.18 0 0);
-  --secondary-foreground: oklch(0.95 0 0);
-  --muted: oklch(0.18 0 0);
-  --muted-foreground: oklch(0.55 0 0);
-  --accent: oklch(0.18 0 0);
-  --accent-foreground: oklch(0.95 0 0);
-  --destructive: oklch(0.65 0.22 25);
-  --border: oklch(0.22 0 0);
-  --input: oklch(0.22 0 0);
-  --ring: oklch(0.5 0 0);
-  --radius: 0.25rem;
-  --chart-1: oklch(0.7 0.15 262);
-  --chart-2: oklch(0.65 0.15 142);
-  --chart-3: oklch(0.65 0.18 55);
-  --chart-4: oklch(0.65 0.18 25);
-  --chart-5: oklch(0.5 0 0);
-  --sidebar: oklch(0.12 0 0);
-  --sidebar-foreground: oklch(0.95 0 0);
-  --sidebar-primary: oklch(0.95 0 0);
-  --sidebar-primary-foreground: oklch(0.09 0 0);
-  --sidebar-accent: oklch(0.18 0 0);
-  --sidebar-accent-foreground: oklch(0.95 0 0);
-  --sidebar-border: oklch(0.22 0 0);
-  --sidebar-ring: oklch(0.5 0 0);
+  --background: #000000;
+  --foreground: #ededed;
+  --card: #0a0a0a;
+  --card-foreground: #ededed;
+  --popover: #111111;
+  --popover-foreground: #ededed;
+  --primary: #0070f3;
+  --primary-foreground: #ffffff;
+  --secondary: #1a1a1a;
+  --secondary-foreground: #ededed;
+  --muted: #1a1a1a;
+  --muted-foreground: #a1a1a1;
+  --accent: #1a1a1a;
+  --accent-foreground: #ededed;
+  --destructive: #ff4444;
+  --border: #2a2a2a;
+  --input: #1a1a1a;
+  --ring: #0070f3;
+  --radius: 0.375rem;
+  --chart-1: #0070f3;
+  --chart-2: #50e3c2;
+  --chart-3: #f5a623;
+  --chart-4: #ff0080;
+  --chart-5: #7928ca;
+  --sidebar: #0a0a0a;
+  --sidebar-foreground: #ededed;
+  --sidebar-primary: #0070f3;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #1a1a1a;
+  --sidebar-accent-foreground: #ededed;
+  --sidebar-border: #2a2a2a;
+  --sidebar-ring: #0070f3;
 }
 
+/* ── Claude Purple: 딥 퍼플 배경 + 바이올렛 글로우 ── */
 [data-theme="claude-purple"] {
-  --background: oklch(0.1 0.03 280);
-  --foreground: oklch(0.95 0.01 280);
-  --card: oklch(0.14 0.04 280);
-  --card-foreground: oklch(0.95 0.01 280);
-  --popover: oklch(0.14 0.04 280);
-  --popover-foreground: oklch(0.95 0.01 280);
-  --primary: oklch(0.65 0.25 290);
-  --primary-foreground: oklch(0.98 0 0);
-  --secondary: oklch(0.2 0.05 280);
-  --secondary-foreground: oklch(0.9 0.01 280);
-  --muted: oklch(0.2 0.05 280);
-  --muted-foreground: oklch(0.6 0.05 280);
-  --accent: oklch(0.65 0.25 290);
-  --accent-foreground: oklch(0.98 0 0);
-  --destructive: oklch(0.65 0.22 25);
-  --border: oklch(0.25 0.06 280);
-  --input: oklch(0.2 0.05 280);
-  --ring: oklch(0.65 0.25 290);
-  --radius: 0.875rem;
-  --chart-1: oklch(0.65 0.25 290);
-  --chart-2: oklch(0.65 0.2 210);
-  --chart-3: oklch(0.65 0.18 142);
-  --chart-4: oklch(0.65 0.18 55);
-  --chart-5: oklch(0.5 0.1 280);
-  --sidebar: oklch(0.14 0.04 280);
-  --sidebar-foreground: oklch(0.95 0.01 280);
-  --sidebar-primary: oklch(0.65 0.25 290);
-  --sidebar-primary-foreground: oklch(0.98 0 0);
-  --sidebar-accent: oklch(0.2 0.05 280);
-  --sidebar-accent-foreground: oklch(0.9 0.01 280);
-  --sidebar-border: oklch(0.25 0.06 280);
-  --sidebar-ring: oklch(0.65 0.25 290);
+  --background: #0d0b18;
+  --foreground: #ede9f8;
+  --card: #16132a;
+  --card-foreground: #ede9f8;
+  --popover: #16132a;
+  --popover-foreground: #ede9f8;
+  --primary: #c084fc;
+  --primary-foreground: #1a0a3a;
+  --secondary: #221d38;
+  --secondary-foreground: #d4ccf0;
+  --muted: #221d38;
+  --muted-foreground: #9d8ec5;
+  --accent: #c084fc;
+  --accent-foreground: #1a0a3a;
+  --destructive: #f87171;
+  --border: #2e2650;
+  --input: #221d38;
+  --ring: #c084fc;
+  --radius: 0.75rem;
+  --chart-1: #c084fc;
+  --chart-2: #818cf8;
+  --chart-3: #34d399;
+  --chart-4: #fbbf24;
+  --chart-5: #f472b6;
+  --sidebar: #16132a;
+  --sidebar-foreground: #ede9f8;
+  --sidebar-primary: #c084fc;
+  --sidebar-primary-foreground: #1a0a3a;
+  --sidebar-accent: #221d38;
+  --sidebar-accent-foreground: #d4ccf0;
+  --sidebar-border: #2e2650;
+  --sidebar-ring: #c084fc;
 }
 
+/* ── Nord: 공식 Nord 팔레트 — 북유럽 블루그레이 ── */
 [data-theme="nord"] {
-  --background: oklch(0.28 0.025 240);
-  --foreground: oklch(0.92 0.01 215);
-  --card: oklch(0.32 0.025 240);
-  --card-foreground: oklch(0.92 0.01 215);
-  --popover: oklch(0.32 0.025 240);
-  --popover-foreground: oklch(0.92 0.01 215);
-  --primary: oklch(0.72 0.1 210);
-  --primary-foreground: oklch(0.15 0.02 240);
-  --secondary: oklch(0.38 0.025 240);
-  --secondary-foreground: oklch(0.9 0.01 215);
-  --muted: oklch(0.36 0.02 240);
-  --muted-foreground: oklch(0.65 0.02 220);
-  --accent: oklch(0.72 0.1 210);
-  --accent-foreground: oklch(0.15 0.02 240);
-  --destructive: oklch(0.65 0.15 25);
-  --border: oklch(0.38 0.02 240);
-  --input: oklch(0.36 0.02 240);
-  --ring: oklch(0.72 0.1 210);
+  --background: #2e3440;
+  --foreground: #eceff4;
+  --card: #3b4252;
+  --card-foreground: #eceff4;
+  --popover: #3b4252;
+  --popover-foreground: #eceff4;
+  --primary: #88c0d0;
+  --primary-foreground: #2e3440;
+  --secondary: #434c5e;
+  --secondary-foreground: #eceff4;
+  --muted: #434c5e;
+  --muted-foreground: #d8dee9;
+  --accent: #81a1c1;
+  --accent-foreground: #2e3440;
+  --destructive: #bf616a;
+  --border: #4c566a;
+  --input: #434c5e;
+  --ring: #88c0d0;
   --radius: 0.5rem;
-  --chart-1: oklch(0.72 0.1 210);
-  --chart-2: oklch(0.7 0.12 170);
-  --chart-3: oklch(0.7 0.1 240);
-  --chart-4: oklch(0.65 0.08 280);
-  --chart-5: oklch(0.5 0.02 230);
-  --sidebar: oklch(0.32 0.025 240);
-  --sidebar-foreground: oklch(0.92 0.01 215);
-  --sidebar-primary: oklch(0.72 0.1 210);
-  --sidebar-primary-foreground: oklch(0.15 0.02 240);
-  --sidebar-accent: oklch(0.38 0.025 240);
-  --sidebar-accent-foreground: oklch(0.9 0.01 215);
-  --sidebar-border: oklch(0.38 0.02 240);
-  --sidebar-ring: oklch(0.72 0.1 210);
+  --chart-1: #88c0d0;
+  --chart-2: #a3be8c;
+  --chart-3: #ebcb8b;
+  --chart-4: #bf616a;
+  --chart-5: #b48ead;
+  --sidebar: #3b4252;
+  --sidebar-foreground: #eceff4;
+  --sidebar-primary: #88c0d0;
+  --sidebar-primary-foreground: #2e3440;
+  --sidebar-accent: #434c5e;
+  --sidebar-accent-foreground: #eceff4;
+  --sidebar-border: #4c566a;
+  --sidebar-ring: #88c0d0;
 }
 
+/* ── Light Clean: 밝고 선명 + Slate 블루 ── */
 [data-theme="light-clean"] {
-  --background: oklch(0.97 0 0);
-  --foreground: oklch(0.12 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.12 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.12 0 0);
-  --primary: oklch(0.45 0.18 262);
-  --primary-foreground: oklch(0.98 0 0);
-  --secondary: oklch(0.94 0 0);
-  --secondary-foreground: oklch(0.2 0 0);
-  --muted: oklch(0.94 0 0);
-  --muted-foreground: oklch(0.5 0 0);
-  --accent: oklch(0.94 0.02 262);
-  --accent-foreground: oklch(0.3 0.1 262);
-  --destructive: oklch(0.55 0.22 25);
-  --border: oklch(0.88 0 0);
-  --input: oklch(0.88 0 0);
-  --ring: oklch(0.6 0.1 262);
-  --radius: 0.625rem;
-  --chart-1: oklch(0.55 0.18 262);
-  --chart-2: oklch(0.55 0.15 142);
-  --chart-3: oklch(0.55 0.15 55);
-  --chart-4: oklch(0.55 0.15 25);
-  --chart-5: oklch(0.6 0 0);
-  --sidebar: oklch(1 0 0);
-  --sidebar-foreground: oklch(0.12 0 0);
-  --sidebar-primary: oklch(0.45 0.18 262);
-  --sidebar-primary-foreground: oklch(0.98 0 0);
-  --sidebar-accent: oklch(0.94 0.02 262);
-  --sidebar-accent-foreground: oklch(0.3 0.1 262);
-  --sidebar-border: oklch(0.88 0 0);
-  --sidebar-ring: oklch(0.6 0.1 262);
+  --background: #f8f9fa;
+  --foreground: #0f172a;
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+  --popover: #ffffff;
+  --popover-foreground: #0f172a;
+  --primary: #2563eb;
+  --primary-foreground: #ffffff;
+  --secondary: #f1f5f9;
+  --secondary-foreground: #334155;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --accent: #eff6ff;
+  --accent-foreground: #1d4ed8;
+  --destructive: #dc2626;
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --ring: #2563eb;
+  --radius: 0.5rem;
+  --chart-1: #2563eb;
+  --chart-2: #059669;
+  --chart-3: #d97706;
+  --chart-4: #dc2626;
+  --chart-5: #7c3aed;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #0f172a;
+  --sidebar-primary: #2563eb;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #eff6ff;
+  --sidebar-accent-foreground: #1d4ed8;
+  --sidebar-border: #e2e8f0;
+  --sidebar-ring: #2563eb;
 }
 
-/* 테마별 카드 스타일 차별화 */
-[data-theme="vercel-dark"] .card-themed,
+/* ── 테마별 카드 스타일 차별화 ── */
 [data-theme="vercel-dark"] [data-slot="card"] {
   box-shadow: none;
-  border-color: oklch(0.22 0 0);
+  border-color: #1f1f1f;
+  background: #0a0a0a;
 }
 
-[data-theme="claude-purple"] .card-themed,
 [data-theme="claude-purple"] [data-slot="card"] {
-  box-shadow: 0 0 0 1px oklch(0.65 0.25 290 / 0.15), 0 4px 24px oklch(0.65 0.25 290 / 0.08);
+  box-shadow: 0 0 0 1px rgba(192, 132, 252, 0.15), 0 8px 32px rgba(192, 132, 252, 0.07);
+  border-color: #2e2650;
 }
 
-[data-theme="nord"] .card-themed,
 [data-theme="nord"] [data-slot="card"] {
-  box-shadow: 0 2px 8px oklch(0 0 0 / 0.3);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  border-color: #4c566a;
 }
 
-[data-theme="light-clean"] .card-themed,
 [data-theme="light-clean"] [data-slot="card"] {
-  box-shadow: 0 1px 3px oklch(0 0 0 / 0.08), 0 4px 12px oklch(0 0 0 / 0.04);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06), 0 4px 16px rgba(0, 0, 0, 0.04);
+  border-color: #e2e8f0;
+}
+
+/* ── Nav 테마별 스타일 ── */
+[data-theme="vercel-dark"] nav {
+  border-bottom-color: #1f1f1f;
+  background: #000000;
+}
+
+[data-theme="claude-purple"] nav {
+  border-bottom-color: #2e2650;
+  background: #16132a;
+}
+
+[data-theme="nord"] nav {
+  border-bottom-color: #4c566a;
+  background: #2e3440;
+}
+
+[data-theme="light-clean"] nav {
+  border-bottom-color: #e2e8f0;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }

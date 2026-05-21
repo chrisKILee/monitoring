@@ -6,26 +6,26 @@ export const THEMES = [
   {
     id: 'vercel-dark' as ThemeId,
     name: 'Vercel Dark',
-    description: '미니멀, 샤프한 블랙',
-    preview: { bg: '#171717', card: '#1a1a1a', primary: '#ffffff', accent: '#888888' },
+    description: '블랙 + Vercel 블루 — 미니멀 대시보드',
+    preview: { bg: '#000000', card: '#0a0a0a', primary: '#0070f3', accent: '#a1a1a1' },
   },
   {
     id: 'claude-purple' as ThemeId,
     name: 'Claude Purple',
-    description: '딥 퍼플, 보라 글로우',
-    preview: { bg: '#0d0a1f', card: '#14112a', primary: '#a855f7', accent: '#7c3aed' },
+    description: '딥 퍼플 + 바이올렛 글로우',
+    preview: { bg: '#0d0b18', card: '#16132a', primary: '#c084fc', accent: '#818cf8' },
   },
   {
     id: 'nord' as ThemeId,
     name: 'Nord',
-    description: '블루그레이, 차갑고 깔끔',
-    preview: { bg: '#2e3440', card: '#3b4252', primary: '#88c0d0', accent: '#5e81ac' },
+    description: '공식 Nord 팔레트 — 북유럽 블루그레이',
+    preview: { bg: '#2e3440', card: '#3b4252', primary: '#88c0d0', accent: '#81a1c1' },
   },
   {
     id: 'light-clean' as ThemeId,
     name: 'Light Clean',
-    description: '밝고 깔끔, 인디고 포인트',
-    preview: { bg: '#f5f5f5', card: '#ffffff', primary: '#4f46e5', accent: '#818cf8' },
+    description: '흰 배경 + Slate 블루 — 밝고 선명',
+    preview: { bg: '#f8f9fa', card: '#ffffff', primary: '#2563eb', accent: '#64748b' },
   },
 ] as const
 
