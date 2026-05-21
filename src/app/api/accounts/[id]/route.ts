@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { AiTool } from '@prisma/client'
 import { encrypt, decrypt } from '@/lib/crypto'
 import { fetchUsage } from '@/lib/claude-api'
 
@@ -34,7 +35,15 @@ type Params = { params: Promise<{ id: string }> }
 
 export async function PUT(req: Request, { params }: Params) {
   const { id } = await params
-  const body = await req.json() as { name?: string; alias?: string | null; cookiesJson?: string; isActive?: boolean; sortOrder?: number }
+  const body = await req.json() as {
+    name?: string
+    alias?: string | null
+    cookiesJson?: string
+    isActive?: boolean
+    sortOrder?: number
+    aiTool?: AiTool
+    hiddenFromDashboard?: boolean
+  }
 
   const account = await prisma.account.findUnique({ where: { id } })
   if (!account) {
@@ -60,8 +69,13 @@ export async function PUT(req: Request, { params }: Params) {
       })()),
       ...(body.isActive !== undefined && { isActive: body.isActive }),
       ...(body.sortOrder !== undefined && { sortOrder: body.sortOrder }),
+      ...(body.aiTool !== undefined && { aiTool: body.aiTool }),
+      ...(body.hiddenFromDashboard !== undefined && { hiddenFromDashboard: body.hiddenFromDashboard }),
     },
-    select: { id: true, name: true, alias: true, orgId: true, isActive: true, sortOrder: true, updatedAt: true },
+    select: {
+      id: true, name: true, alias: true, orgId: true, isActive: true,
+      sortOrder: true, aiTool: true, hiddenFromDashboard: true, updatedAt: true,
+    },
   })
 
   return NextResponse.json({ data: updated })
@@ -91,6 +105,13 @@ export async function POST(_req: Request, { params }: Params) {
     return NextResponse.json(
       { error: { code: 'NOT_FOUND', message: '계정을 찾을 수 없습니다' } },
       { status: 404 }
+    )
+  }
+
+  if (account.aiTool !== 'claude' || !account.orgId || !account.encryptedCookies) {
+    return NextResponse.json(
+      { error: { code: 'UNSUPPORTED', message: `${account.aiTool} 계정은 사용량 수집을 지원하지 않습니다` } },
+      { status: 400 }
     )
   }
 

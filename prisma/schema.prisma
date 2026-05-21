@@ -6,22 +6,29 @@ datasource db {
   provider = "postgresql"
 }
 
+enum AiTool {
+  claude
+  codex
+}
+
 model Account {
-  id               String           @id @default(cuid())
-  name             String
-  orgId            String           @unique
-  encryptedCookies String
-  isActive         Boolean          @default(true)
-  lastFetchedAt    DateTime?
-  lastError        String?
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
-  cookieExpiresAt  DateTime?
-  alias            String?
-  sortOrder        Int              @default(0)
-  alertLogs        AlertLog[]
-  usageLogs        UsageLog[]
-  serviceAccounts  ServiceAccount[]
+  id                  String           @id @default(cuid())
+  name                String
+  orgId               String?          @unique
+  encryptedCookies    String?
+  isActive            Boolean          @default(true)
+  lastFetchedAt       DateTime?
+  lastError           String?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+  cookieExpiresAt     DateTime?
+  alias               String?
+  sortOrder           Int              @default(0)
+  aiTool              AiTool           @default(claude)
+  hiddenFromDashboard Boolean          @default(false)
+  alertLogs           AlertLog[]
+  usageLogs           UsageLog[]
+  serviceAccounts     ServiceAccount[]
 }
 
 model ServiceAccount {

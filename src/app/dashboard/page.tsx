@@ -9,7 +9,7 @@ async function getLatestUsage(): Promise<AccountLatest[]> {
   const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1000)
 
   const accounts = await prisma.account.findMany({
-    where: { isActive: true },
+    where: { isActive: true, hiddenFromDashboard: false, aiTool: 'claude' },
     orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
     select: {
       id: true,

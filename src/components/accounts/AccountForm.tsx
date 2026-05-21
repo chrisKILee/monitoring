@@ -7,17 +7,20 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 
+type AiTool = 'claude' | 'codex'
+
 interface Props {
   open: boolean
   onClose: () => void
   onSuccess: () => void
-  account?: { id: string; name: string; alias: string | null; orgId: string }
+  account?: { id: string; name: string; alias: string | null; orgId: string | null; aiTool?: AiTool }
 }
 
 export function AccountForm({ open, onClose, onSuccess, account }: Props) {
   const isEdit = Boolean(account)
   const [name, setName] = useState(account?.name ?? '')
   const [alias, setAlias] = useState(account?.alias ?? '')
+  const [aiTool, setAiTool] = useState<AiTool>(account?.aiTool ?? 'claude')
   const [cookiesJson, setCookiesJson] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -26,6 +29,7 @@ export function AccountForm({ open, onClose, onSuccess, account }: Props) {
     if (open) {
       setName(account?.name ?? '')
       setAlias(account?.alias ?? '')
+      setAiTool(account?.aiTool ?? 'claude')
       setCookiesJson('')
       setError(null)
     }
@@ -37,15 +41,19 @@ export function AccountForm({ open, onClose, onSuccess, account }: Props) {
     setLoading(true)
 
     try {
-      if (!isEdit && !cookiesJson.trim()) {
-        setError('쿠키 JSON을 입력해주세요')
+      if (!isEdit && aiTool === 'claude' && !cookiesJson.trim()) {
+        setError('Claude 계정은 쿠키 JSON 입력이 필요합니다')
         return
       }
 
       const url = isEdit ? `/api/accounts/${account!.id}` : '/api/accounts'
       const method = isEdit ? 'PUT' : 'POST'
-      const body: Record<string, string | null> = { name, alias: alias.trim() || null }
-      if (!isEdit) body.cookiesJson = cookiesJson
+      const body: Record<string, string | null> = {
+        name,
+        alias: alias.trim() || null,
+        aiTool,
+      }
+      if (!isEdit && aiTool === 'claude') body.cookiesJson = cookiesJson
       if (isEdit && cookiesJson.trim()) body.cookiesJson = cookiesJson
 
       const res = await fetch(url, {
@@ -75,6 +83,26 @@ export function AccountForm({ open, onClose, onSuccess, account }: Props) {
 
         <form onSubmit={handleSubmit} className="space-y-4 overflow-y-auto flex-1 pr-1">
           <div className="space-y-1">
+            <Label>AI 도구</Label>
+            <div className="flex gap-2">
+              {(['claude', 'codex'] as const).map(t => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setAiTool(t)}
+                  className={`flex-1 rounded-md border px-3 py-2 text-sm font-medium capitalize transition-colors ${
+                    aiTool === t
+                      ? 'border-primary bg-primary/10 text-foreground'
+                      : 'border-border bg-background text-muted-foreground hover:bg-muted'
+                  }`}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-1">
             <Label htmlFor="name">계정 이름 <span className="text-xs text-muted-foreground">(내부 식별용)</span></Label>
             <Input id="name" value={name} onChange={e => setName(e.target.value)} placeholder="예: share01" required />
           </div>
@@ -91,15 +119,21 @@ export function AccountForm({ open, onClose, onSuccess, account }: Props) {
             />
           </div>
 
-          <div className="space-y-1">
-            <Label htmlFor="cookies">쿠키 JSON {isEdit && <span className="text-muted-foreground">(변경 시에만 입력)</span>}</Label>
-            <Textarea id="cookies" value={cookiesJson} onChange={e => setCookiesJson(e.target.value)}
-              placeholder={'curl 명령어 전체 붙여넣기 (또는 Network 탭 cookie 헤더값)'}
-              className="font-mono text-xs resize-none overflow-auto break-all h-24" required={!isEdit} />
-            <p className="text-xs text-muted-foreground">
-              Network 탭 요청 우클릭 → <strong>Copy as cURL</strong> → 여기에 붙여넣기
-            </p>
-          </div>
+          {aiTool === 'claude' ? (
+            <div className="space-y-1">
+              <Label htmlFor="cookies">쿠키 JSON {isEdit && <span className="text-muted-foreground">(변경 시에만 입력)</span>}</Label>
+              <Textarea id="cookies" value={cookiesJson} onChange={e => setCookiesJson(e.target.value)}
+                placeholder={'curl 명령어 전체 붙여넣기 (또는 Network 탭 cookie 헤더값)'}
+                className="font-mono text-xs resize-none overflow-auto break-all h-24" required={!isEdit} />
+              <p className="text-xs text-muted-foreground">
+                Network 탭 요청 우클릭 → <strong>Copy as cURL</strong> → 여기에 붙여넣기
+              </p>
+            </div>
+          ) : (
+            <div className="rounded-md border border-dashed border-border bg-muted/30 p-3 text-xs text-muted-foreground">
+              Codex 계정은 메타데이터만 등록됩니다. 사용량 수집은 추후 별도 연동 예정입니다.
+            </div>
+          )}
 
           {error && <p className="text-sm text-destructive">{error}</p>}
 

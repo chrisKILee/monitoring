@@ -20,6 +20,13 @@ export async function POST(_req: Request, { params }: Params) {
     )
   }
 
+  if (account.aiTool !== 'claude' || !account.orgId || !account.encryptedCookies) {
+    return NextResponse.json(
+      { error: { code: 'UNSUPPORTED', message: `${account.aiTool} 계정은 사용량 수집을 지원하지 않습니다` } },
+      { status: 400 }
+    )
+  }
+
   try {
     const cookiesJson = decrypt(account.encryptedCookies)
     const usage = await fetchUsage(account.orgId, cookiesJson)

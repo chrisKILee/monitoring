@@ -31,7 +31,7 @@ export async function POST(req: Request) {
 
 async function runCollect() {
   const accounts = await prisma.account.findMany({
-    where: { isActive: true },
+    where: { isActive: true, aiTool: 'claude' },
   })
 
   // 동시 요청 시 Claude.ai 세션 충돌 방지 — 순차 실행 + 3초 간격
@@ -57,9 +57,14 @@ async function runCollect() {
 async function collectAccount(account: {
   id: string
   name: string
-  orgId: string
-  encryptedCookies: string
+  orgId: string | null
+  encryptedCookies: string | null
 }) {
+  // aiTool='claude' 필터가 이미 걸려 있어 orgId/encryptedCookies 모두 not-null로 등록되어야 함
+  if (!account.orgId || !account.encryptedCookies) {
+    throw new Error(`Claude 계정 ${account.name}에 orgId 또는 cookies가 없습니다`)
+  }
+
   try {
     const cookiesJson = decrypt(account.encryptedCookies)
     const usage = await fetchUsage(account.orgId, cookiesJson)

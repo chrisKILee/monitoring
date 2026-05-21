@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { AiTool } from '@prisma/client'
 import { encrypt, decrypt } from '@/lib/crypto'
 
 export async function GET() {
@@ -12,6 +13,8 @@ export async function GET() {
       orgId: true,
       sortOrder: true,
       isActive: true,
+      aiTool: true,
+      hiddenFromDashboard: true,
       cookieExpiresAt: true,
       encryptedCookies: true,
       lastFetchedAt: true,
@@ -23,10 +26,12 @@ export async function GET() {
 
   const data = accounts.map(({ encryptedCookies, ...acc }) => {
     let deviceId: string | null = null
-    try {
-      const parsed = JSON.parse(decrypt(encryptedCookies)) as Record<string, string>
-      deviceId = parsed['anthropic-device-id'] ?? null
-    } catch { /* 복호화 실패 시 null */ }
+    if (encryptedCookies) {
+      try {
+        const parsed = JSON.parse(decrypt(encryptedCookies)) as Record<string, string>
+        deviceId = parsed['anthropic-device-id'] ?? null
+      } catch { /* 복호화 실패 시 null */ }
+    }
     return { ...acc, deviceId }
   })
 
@@ -80,51 +85,90 @@ function parseCookieInput(input: string): { cookies: Record<string, string>; org
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json() as { name?: string; cookiesJson?: string }
+    const body = await req.json() as {
+      name?: string
+      alias?: string | null
+      cookiesJson?: string
+      aiTool?: AiTool
+      hiddenFromDashboard?: boolean
+    }
 
-    if (!body.name || !body.cookiesJson) {
+    if (!body.name) {
       return NextResponse.json(
-        { error: { code: 'VALIDATION_ERROR', message: 'name, cookiesJson은 필수입니다' } },
+        { error: { code: 'VALIDATION_ERROR', message: 'name은 필수입니다' } },
         { status: 400 }
       )
     }
 
-    // curl 명령어 / raw cookie string / JSON 파싱 + orgId 자동 추출
-    const parseResult = parseCookieInput(body.cookiesJson)
-    if (!parseResult) {
-      return NextResponse.json(
-        { error: { code: 'VALIDATION_ERROR', message: '쿠키 형식이 올바르지 않습니다. curl 명령어, cookie 헤더값, JSON 중 하나를 붙여넣어 주세요.' } },
-        { status: 400 }
-      )
+    const aiTool: AiTool = body.aiTool === 'codex' ? 'codex' : 'claude'
+
+    // 새 계정은 항상 맨 하단에 위치 — 현재 max(sortOrder) + 1
+    const maxOrder = await prisma.account.aggregate({ _max: { sortOrder: true } })
+    const nextSortOrder = (maxOrder._max.sortOrder ?? -1) + 1
+
+    // Claude는 cookies 필수, Codex는 메타데이터만 등록
+    if (aiTool === 'claude') {
+      if (!body.cookiesJson) {
+        return NextResponse.json(
+          { error: { code: 'VALIDATION_ERROR', message: 'Claude 계정은 cookiesJson이 필수입니다' } },
+          { status: 400 }
+        )
+      }
+
+      const parseResult = parseCookieInput(body.cookiesJson)
+      if (!parseResult) {
+        return NextResponse.json(
+          { error: { code: 'VALIDATION_ERROR', message: '쿠키 형식이 올바르지 않습니다. curl 명령어, cookie 헤더값, JSON 중 하나를 붙여넣어 주세요.' } },
+          { status: 400 }
+        )
+      }
+
+      const { cookies: parsed, orgId: curlOrgId } = parseResult
+      const orgId = curlOrgId || parsed.lastActiveOrg || parsed._orgId
+      if (!orgId) {
+        return NextResponse.json(
+          { error: { code: 'VALIDATION_ERROR', message: 'orgId를 찾을 수 없습니다. curl 명령어 전체 또는 Network 탭 cookie 헤더를 붙여넣어 주세요.' } },
+          { status: 400 }
+        )
+      }
+
+      const existing = await prisma.account.findUnique({ where: { orgId } })
+      if (existing) {
+        return NextResponse.json(
+          { error: { code: 'CONFLICT', message: '이미 등록된 orgId입니다' } },
+          { status: 409 }
+        )
+      }
+
+      const cookieExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30일 후
+
+      const account = await prisma.account.create({
+        data: {
+          name: body.name,
+          alias: body.alias ?? null,
+          orgId,
+          encryptedCookies: encrypt(JSON.stringify(parsed)),
+          cookieExpiresAt,
+          aiTool,
+          hiddenFromDashboard: body.hiddenFromDashboard ?? false,
+          sortOrder: nextSortOrder,
+        },
+        select: { id: true, name: true, orgId: true, isActive: true, aiTool: true, createdAt: true },
+      })
+
+      return NextResponse.json({ data: account }, { status: 201 })
     }
 
-    const { cookies: parsed, orgId: curlOrgId } = parseResult
-    const orgId = curlOrgId || parsed.lastActiveOrg || parsed._orgId
-    if (!orgId) {
-      return NextResponse.json(
-        { error: { code: 'VALIDATION_ERROR', message: 'orgId를 찾을 수 없습니다. curl 명령어 전체 또는 Network 탭 cookie 헤더를 붙여넣어 주세요.' } },
-        { status: 400 }
-      )
-    }
-
-    const existing = await prisma.account.findUnique({ where: { orgId } })
-    if (existing) {
-      return NextResponse.json(
-        { error: { code: 'CONFLICT', message: '이미 등록된 orgId입니다' } },
-        { status: 409 }
-      )
-    }
-
-    const cookieExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30일 후
-
+    // Codex: 메타데이터만 등록 (orgId/cookies null)
     const account = await prisma.account.create({
       data: {
         name: body.name,
-        orgId,
-        encryptedCookies: encrypt(JSON.stringify(parsed)),
-        cookieExpiresAt,
+        alias: body.alias ?? null,
+        aiTool,
+        hiddenFromDashboard: body.hiddenFromDashboard ?? false,
+        sortOrder: nextSortOrder,
       },
-      select: { id: true, name: true, orgId: true, isActive: true, createdAt: true },
+      select: { id: true, name: true, isActive: true, aiTool: true, createdAt: true },
     })
 
     return NextResponse.json({ data: account }, { status: 201 })
