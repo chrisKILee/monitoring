@@ -13,12 +13,18 @@ const MONITORING_API_BASE = 'https://monitoring.chrisnolja.dev/api/sync';
 
 /**
  * 최초 한 번만 실행 — Properties에 SYNC_SECRET 저장
- * 실행 후 이 함수의 SECRET 줄은 비워두거나 함수 자체를 지워도 됨
+ *
+ * ⚠️ SECRET 값은 Vercel 환경변수와 동일해야 함 — Vercel Dashboard 또는 별도 채널로 받음.
+ * 절대 git에 커밋하지 말 것. 저장 후 이 함수 자체를 삭제하는 것을 권장.
  */
 function setupSecret() {
-  const SECRET = 'V4swOCP1zWCD62TDUCuFJ85FFcbdoCr/ESCZbVGoK0w=';
+  const SECRET = 'PASTE_YOUR_SECRET_HERE';  // ← Vercel SYNC_API_SECRET 값 붙여넣기
+  if (SECRET === 'PASTE_YOUR_SECRET_HERE') {
+    Logger.log('❌ SECRET을 실제 값으로 교체한 후 다시 실행하세요');
+    return;
+  }
   PropertiesService.getScriptProperties().setProperty('SYNC_SECRET', SECRET);
-  Logger.log('✓ SYNC_SECRET 저장 완료');
+  Logger.log('✓ SYNC_SECRET 저장 완료 — 이제 syncAllGroups() 실행 가능. setupSecret 함수는 삭제 권장.');
 }
 
 /**
