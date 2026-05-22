@@ -36,7 +36,7 @@ async function getLatestUsage(): Promise<AccountLatest[]> {
       members: {
         where: { member: { hidden: false } },
         select: {
-          member: { select: { name: true, email: true } },
+          member: { select: { name: true, email: true, department: true } },
         },
       },
     },
@@ -51,7 +51,13 @@ async function getLatestUsage(): Promise<AccountLatest[]> {
     lastError: acc.lastError,
     latest: acc.usageLogs[0] ?? null,
     recentLogs: [...acc.usageLogs].reverse(),
-    members: acc.members.map(m => m.member.name ?? m.member.email),
+    members: acc.members
+      .map(m => ({
+        email: m.member.email,
+        name: m.member.name,
+        department: m.member.department,
+      }))
+      .sort((a, b) => (a.name ?? a.email).localeCompare(b.name ?? b.email, 'ko')),
   })) as unknown as AccountLatest[]
 }
 

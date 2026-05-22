@@ -40,10 +40,16 @@ export interface AccountLatest {
     fetchedAt: string
   } | null
   recentLogs: RecentLog[]
-  members: string[]
+  members: MemberSummary[]
 }
 
-function MembersAccordion({ members }: { members: string[] }) {
+export interface MemberSummary {
+  email: string
+  name: string | null
+  department: string | null
+}
+
+function MembersAccordion({ members }: { members: MemberSummary[] }) {
   const [open, setOpen] = useState(false)
 
   if (members.length === 0) {
@@ -54,7 +60,7 @@ function MembersAccordion({ members }: { members: string[] }) {
     )
   }
 
-  const panelId = `members-panel-${members.length}-${members[0]}`
+  const panelId = `members-panel-${members.length}-${members[0].email}`
 
   return (
     <div className="border-t pt-2">
@@ -70,10 +76,13 @@ function MembersAccordion({ members }: { members: string[] }) {
       </button>
       {open && (
         <ul id={panelId} className="mt-1.5 space-y-0.5 pl-2">
-          {members.map(name => (
-            <li key={name} className="text-xs text-foreground/90">
-              <span className="text-muted-foreground mr-1">•</span>
-              {name}
+          {members.map(m => (
+            <li key={m.email} className="text-xs text-foreground/90 flex items-baseline gap-1.5">
+              <span className="text-muted-foreground">•</span>
+              <span className="font-medium">{m.name ?? m.email}</span>
+              {m.department && (
+                <span className="text-muted-foreground text-[11px] truncate">— {m.department}</span>
+              )}
             </li>
           ))}
         </ul>
