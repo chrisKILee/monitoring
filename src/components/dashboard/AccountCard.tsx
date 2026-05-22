@@ -101,7 +101,7 @@ function StatusBadge({ account }: { account: AccountLatest }) {
 }
 
 function ToolBadge({ tool }: { tool?: 'claude' | 'codex' }) {
-  const cssVar = tool === 'codex' ? 'var(--chart-2)' : 'var(--chart-3)'
+  const cssVar = tool === 'codex' ? 'var(--badge-codex)' : 'var(--badge-claude)'
   return (
     <span
       className="inline-flex items-center rounded-full border px-1.5 py-0 text-[10px] font-medium leading-4"

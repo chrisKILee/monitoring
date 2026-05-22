@@ -133,6 +133,20 @@
    DB 기반 글로벌 테마 (data-theme 속성)
    ============================================= */
 
+/* ── 뱃지 색상 변수 (기본: chart-3=Claude, chart-2=Codex) ── */
+[data-theme="linear"],
+[data-theme="stripe"],
+[data-theme="light-clean"] {
+  --badge-claude: var(--chart-3);
+  --badge-codex: var(--chart-2);
+}
+
+/* Nord: 옐로우 vs 서리 블루 — 파스텔 충돌 방지 */
+[data-theme="nord"] {
+  --badge-claude: var(--chart-3);  /* #ebcb8b 노드 옐로우 */
+  --badge-codex: var(--chart-1);   /* #88c0d0 노드 서리 블루 */
+}
+
 /* ── Linear: 딥 블랙(#010102) + 라벤더 블루 — Linear 공식 팔레트 ── */
 [data-theme="linear"] {
   --background: #010102;
