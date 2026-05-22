@@ -6,8 +6,6 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 
 interface UserPermission {
-  membersRead: boolean
-  membersWrite: boolean
   serviceAccRead: boolean
   serviceAccWrite: boolean
   monitoringRead: boolean
@@ -25,8 +23,6 @@ interface AppUser {
 }
 
 const PERM_LABELS: { key: keyof UserPermission; label: string }[] = [
-  { key: 'membersRead', label: '사용자관리 R' },
-  { key: 'membersWrite', label: '사용자관리 W' },
   { key: 'serviceAccRead', label: '계정관리 R' },
   { key: 'serviceAccWrite', label: '계정관리 W' },
   { key: 'monitoringRead', label: '모니터링 R' },
@@ -45,8 +41,6 @@ export function AdminUsersTable({ initialUsers }: { initialUsers: AppUser[] }) {
 
   function defaultPerms(p: UserPermission | null): UserPermission {
     return {
-      membersRead: false,
-      membersWrite: false,
       serviceAccRead: false,
       serviceAccWrite: false,
       monitoringRead: false,
@@ -116,7 +110,6 @@ export function AdminUsersTable({ initialUsers }: { initialUsers: AppUser[] }) {
             <tr>
               <th className="text-left p-3 font-medium">사용자</th>
               <th className="text-left p-3 font-medium">역할</th>
-              <th className="text-left p-3 font-medium">사용자관리</th>
               <th className="text-left p-3 font-medium">계정관리</th>
               <th className="text-left p-3 font-medium">모니터링</th>
               <th className="text-left p-3 font-medium">가입일</th>
@@ -158,34 +151,6 @@ export function AdminUsersTable({ initialUsers }: { initialUsers: AppUser[] }) {
                         </Badge>
                       )}
                     </button>
-                  </td>
-
-                  {/* 사용자관리 권한 */}
-                  <td className="p-3">
-                    {isAdmin ? (
-                      <span className="text-xs text-muted-foreground">전체</span>
-                    ) : (
-                      <div className="flex gap-3">
-                        <label className="flex items-center gap-1 cursor-pointer text-xs">
-                          <input
-                            type="checkbox"
-                            checked={perms.membersRead}
-                            onChange={() => togglePerm(user.id, 'membersRead', perms.membersRead)}
-                            className="w-3.5 h-3.5"
-                          />
-                          Read
-                        </label>
-                        <label className="flex items-center gap-1 cursor-pointer text-xs">
-                          <input
-                            type="checkbox"
-                            checked={perms.membersWrite}
-                            onChange={() => togglePerm(user.id, 'membersWrite', perms.membersWrite)}
-                            className="w-3.5 h-3.5"
-                          />
-                          Write
-                        </label>
-                      </div>
-                    )}
                   </td>
 
                   {/* 계정관리 권한 */}

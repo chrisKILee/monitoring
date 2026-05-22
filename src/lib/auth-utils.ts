@@ -21,9 +21,9 @@ export async function getPermissions(userId: string) {
 export async function requirePermission(
   userId: string,
   role: string,
-  check: (p: { membersRead: boolean; membersWrite: boolean; serviceAccRead: boolean; serviceAccWrite: boolean; monitoringRead: boolean; monitoringWrite: boolean }) => boolean
+  check: (p: { serviceAccRead: boolean; serviceAccWrite: boolean; monitoringRead: boolean; monitoringWrite: boolean }) => boolean
 ) {
   if (role === 'admin') return
   const perms = await getPermissions(userId)
-  if (!perms || !check(perms)) redirect('/dashboard')
+  if (!perms || !check(perms)) redirect('/')
 }

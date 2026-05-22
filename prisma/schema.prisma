@@ -157,8 +157,6 @@ model AppUser {
 model UserPermission {
   id              String  @id @default(cuid())
   userId          String  @unique
-  membersRead     Boolean @default(false)
-  membersWrite    Boolean @default(false)
   serviceAccRead  Boolean @default(false)
   serviceAccWrite Boolean @default(false)
   monitoringRead  Boolean @default(false)
