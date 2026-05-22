@@ -12,68 +12,103 @@ enum AiTool {
 }
 
 model Account {
-  id                  String           @id @default(cuid())
-  name                String
-  orgId               String?          @unique
+  id                  String          @id @default(cuid())
+  name                String          @unique
+  alias               String?
+  aiTool              AiTool          @default(claude)
+  hiddenFromDashboard Boolean         @default(false)
+  sortOrder           Int             @default(0)
+  isActive            Boolean         @default(true)
+
+  // Claude 수집 (Codex는 null)
+  orgId               String?         @unique
   encryptedCookies    String?
-  isActive            Boolean          @default(true)
+  cookieExpiresAt     DateTime?
   lastFetchedAt       DateTime?
   lastError           String?
-  createdAt           DateTime         @default(now())
-  updatedAt           DateTime         @updatedAt
-  cookieExpiresAt     DateTime?
-  alias               String?
-  sortOrder           Int              @default(0)
-  aiTool              AiTool           @default(claude)
-  hiddenFromDashboard Boolean          @default(false)
+
+  // 구 ServiceAccount에서 흡수
+  phoneAuth           String?
+  isShared            String?
+  note                String?
+
+  // 멤버 동기화 추적
+  lastMemberSyncedAt  DateTime?
+
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+
   alertLogs           AlertLog[]
   usageLogs           UsageLog[]
-  serviceAccounts     ServiceAccount[]
+  members             AccountMember[]
 }
 
-model ServiceAccount {
-  id          String                 @id @default(cuid())
-  accountName String                 @unique
+model Member {
+  id         String          @id @default(cuid())
+  email      String          @unique
+  name       String?
+  department String?
+  title      String?
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+  accounts   AccountMember[]
+}
+
+model AccountMember {
+  id        String   @id @default(cuid())
+  accountId String
+  memberId  String
+  syncedAt  DateTime @default(now())
+  account   Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  member    Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@unique([accountId, memberId])
+  @@index([accountId])
+  @@index([memberId])
+  @@map("account_member")
+}
+
+// ====================================================================
+// 백업 테이블 — 2026-05-22 마이그레이션 직전 스냅샷 보존용
+// 한 달 후 안전 확인되면 DROP TABLE로 정리
+// ====================================================================
+
+model MemberLegacy20260522 {
+  id         String   @id
+  name       String
+  department String?
+  purpose    String?
+  createdAt  DateTime
+  updatedAt  DateTime
+
+  @@map("Member_legacy_20260522")
+}
+
+model ServiceAccountLegacy20260522 {
+  id          String   @id
+  accountName String
   phoneAuth   String?
   isShared    String?
   note        String?
   service     String
-  createdAt   DateTime               @default(now())
-  updatedAt   DateTime               @updatedAt
+  createdAt   DateTime
+  updatedAt   DateTime
   accountId   String?
   alias       String?
-  memberLinks MemberServiceAccount[]
-  account     Account?               @relation(fields: [accountId], references: [id])
 
-  @@index([accountId])
-  @@map("service_account")
+  @@map("service_account_legacy_20260522")
 }
 
-model Member {
-  id              String                 @id @default(cuid())
-  name            String
-  department      String?
-  purpose         String?
-  createdAt       DateTime               @default(now())
-  updatedAt       DateTime               @updatedAt
-  serviceAccounts MemberServiceAccount[]
-}
-
-model MemberServiceAccount {
-  id               String         @id @default(cuid())
+model MemberServiceAccountLegacy20260522 {
+  id               String    @id
   memberId         String
   serviceAccountId String
   startDate        DateTime?
   endDate          DateTime?
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
-  member           Member         @relation(fields: [memberId], references: [id], onDelete: Cascade)
-  serviceAccount   ServiceAccount @relation(fields: [serviceAccountId], references: [id], onDelete: Cascade)
+  createdAt        DateTime
+  updatedAt        DateTime
 
-  @@unique([memberId, serviceAccountId])
-  @@index([serviceAccountId])
-  @@index([endDate])
-  @@map("member_service_account")
+  @@map("member_service_account_legacy_20260522")
 }
 
 model UsageLog {

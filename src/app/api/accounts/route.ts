@@ -15,16 +15,28 @@ export async function GET() {
       isActive: true,
       aiTool: true,
       hiddenFromDashboard: true,
+      phoneAuth: true,
+      isShared: true,
+      note: true,
       cookieExpiresAt: true,
       encryptedCookies: true,
       lastFetchedAt: true,
+      lastMemberSyncedAt: true,
       lastError: true,
       createdAt: true,
       updatedAt: true,
+      members: {
+        select: {
+          syncedAt: true,
+          member: {
+            select: { id: true, email: true, name: true, department: true, title: true },
+          },
+        },
+      },
     },
   })
 
-  const data = accounts.map(({ encryptedCookies, ...acc }) => {
+  const data = accounts.map(({ encryptedCookies, members, ...acc }) => {
     let deviceId: string | null = null
     if (encryptedCookies) {
       try {
@@ -32,9 +44,23 @@ export async function GET() {
         deviceId = parsed['anthropic-device-id'] ?? null
       } catch { /* 복호화 실패 시 null */ }
     }
-    return { ...acc, deviceId }
+    const mappedMembers = members.map(am => ({
+      id: am.member.id,
+      email: am.member.email,
+      name: am.member.name,
+      department: am.member.department,
+      title: am.member.title,
+      syncedAt: am.syncedAt,
+    }))
+    // 이름(또는 이메일) 가나다순 정렬
+    mappedMembers.sort((a, b) => (a.name ?? a.email).localeCompare(b.name ?? b.email, 'ko'))
+    return {
+      ...acc,
+      deviceId,
+      memberCount: mappedMembers.length,
+      members: mappedMembers,
+    }
   })
-
 
   return NextResponse.json({ data })
 }

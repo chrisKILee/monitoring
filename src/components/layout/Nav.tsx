@@ -26,9 +26,7 @@ export function Nav() {
   // For client-side nav, we show all if admin; for regular users the page itself enforces permission
   const links = [
     { href: '/dashboard', label: '대시보드', always: true },
-    { href: '/members', label: '사용자 관리', always: isAdmin },
-    { href: '/service-accounts', label: '계정 관리', always: isAdmin },
-    { href: '/accounts', label: '모니터링 계정', always: isAdmin },
+    { href: '/accounts', label: '계정 관리', always: isAdmin },
     { href: '/admin', label: '관리계정 관리', always: isAdmin, adminOnly: true },
     { href: '/themes', label: '테마', always: isAdmin, adminOnly: true },
   ].filter((l) => l.always)

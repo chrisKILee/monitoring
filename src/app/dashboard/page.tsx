@@ -3,7 +3,6 @@ export const dynamic = 'force-dynamic'
 import { AccountCard, type AccountLatest } from '@/components/dashboard/AccountCard'
 import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
-import { dedupeMemberNames } from '@/lib/member-utils'
 
 async function getLatestUsage(): Promise<AccountLatest[]> {
   const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1000)
@@ -34,13 +33,9 @@ async function getLatestUsage(): Promise<AccountLatest[]> {
           fetchedAt: true,
         },
       },
-      serviceAccounts: {
+      members: {
         select: {
-          memberLinks: {
-            select: {
-              member: { select: { name: true } },
-            },
-          },
+          member: { select: { name: true, email: true } },
         },
       },
     },
@@ -55,7 +50,7 @@ async function getLatestUsage(): Promise<AccountLatest[]> {
     lastError: acc.lastError,
     latest: acc.usageLogs[0] ?? null,
     recentLogs: [...acc.usageLogs].reverse(),
-    members: dedupeMemberNames(acc.serviceAccounts),
+    members: acc.members.map(m => m.member.name ?? m.member.email),
   })) as unknown as AccountLatest[]
 }
 
