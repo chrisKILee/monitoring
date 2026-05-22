@@ -101,17 +101,18 @@ function StatusBadge({ account }: { account: AccountLatest }) {
 }
 
 function ToolBadge({ tool }: { tool?: 'claude' | 'codex' }) {
-  if (tool === 'codex') {
-    return (
-      <Badge className="bg-sky-500/15 text-sky-600 border border-sky-500/30 dark:text-sky-400 text-[10px] px-1.5 py-0">
-        Codex
-      </Badge>
-    )
-  }
+  const cssVar = tool === 'codex' ? 'var(--chart-2)' : 'var(--chart-3)'
   return (
-    <Badge className="bg-orange-500/15 text-orange-600 border border-orange-500/30 dark:text-orange-400 text-[10px] px-1.5 py-0">
-      Claude
-    </Badge>
+    <span
+      className="inline-flex items-center rounded-full border px-1.5 py-0 text-[10px] font-medium leading-4"
+      style={{
+        background: `color-mix(in srgb, ${cssVar} 14%, transparent)`,
+        color: cssVar,
+        borderColor: `color-mix(in srgb, ${cssVar} 35%, transparent)`,
+      }}
+    >
+      {tool === 'codex' ? 'Codex' : 'Claude'}
+    </span>
   )
 }
 
