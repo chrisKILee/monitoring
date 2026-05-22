@@ -34,6 +34,7 @@ async function getLatestUsage(): Promise<AccountLatest[]> {
         },
       },
       members: {
+        where: { member: { hidden: false } },
         select: {
           member: { select: { name: true, email: true } },
         },

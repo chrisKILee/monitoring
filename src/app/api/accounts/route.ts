@@ -26,6 +26,7 @@ export async function GET() {
       createdAt: true,
       updatedAt: true,
       members: {
+        where: { member: { hidden: false } },
         select: {
           syncedAt: true,
           member: {
