@@ -100,6 +100,21 @@ function StatusBadge({ account }: { account: AccountLatest }) {
   return <Badge className="bg-green-500 text-white">정상</Badge>
 }
 
+function ToolBadge({ tool }: { tool?: 'claude' | 'codex' }) {
+  if (tool === 'codex') {
+    return (
+      <Badge className="bg-sky-500/15 text-sky-600 border border-sky-500/30 dark:text-sky-400 text-[10px] px-1.5 py-0">
+        Codex
+      </Badge>
+    )
+  }
+  return (
+    <Badge className="bg-orange-500/15 text-orange-600 border border-orange-500/30 dark:text-orange-400 text-[10px] px-1.5 py-0">
+      Claude
+    </Badge>
+  )
+}
+
 function useNow(): number | null {
   const [now, setNow] = useState<number | null>(null)
   useEffect(() => {
@@ -361,6 +376,7 @@ export function AccountCard({ account }: { account: AccountLatest }) {
             )}
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
+            <ToolBadge tool={account.aiTool} />
             <StatusBadge account={account} />
             <Button
               size="sm"
