@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { AiTool } from '@prisma/client'
 import { encrypt, decrypt } from '@/lib/crypto'
 import { fetchUsage } from '@/lib/claude-api'
+import { extractBearerToken, parseTokenExpiry } from '@/lib/codex-api'
 
 /** raw cookie string 또는 curl 명령어를 JSON 문자열로 정규화 */
 function normalizeCookies(input: string): string | null {
@@ -39,6 +40,7 @@ export async function PUT(req: Request, { params }: Params) {
     name?: string
     alias?: string | null
     cookiesJson?: string
+    tokenInput?: string
     isActive?: boolean
     sortOrder?: number
     aiTool?: AiTool
@@ -64,6 +66,15 @@ export async function PUT(req: Request, { params }: Params) {
         return {
           encryptedCookies: encrypt(normalized),
           cookieExpiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+          lastError: null,
+        }
+      })()),
+      ...(body.tokenInput && (() => {
+        const token = extractBearerToken(body.tokenInput!)
+        if (!token) throw new Error('토큰 형식이 올바르지 않습니다')
+        return {
+          encryptedToken: encrypt(token),
+          tokenExpiresAt: parseTokenExpiry(token),
           lastError: null,
         }
       })()),

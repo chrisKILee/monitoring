@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { fetchUsage, CookieExpiredError } from '@/lib/claude-api'
+import { fetchCodexUsage, TokenExpiredError } from '@/lib/codex-api'
 import { decrypt } from '@/lib/crypto'
 import { isExpiringSoon } from '@/lib/prediction'
 import { sendAlert } from '@/lib/alert'
@@ -12,7 +13,17 @@ type Params = { params: Promise<{ id: string }> }
 export async function POST(_req: Request, { params }: Params) {
   const { id } = await params
 
-  const account = await prisma.account.findUnique({ where: { id } })
+  const account = await prisma.account.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      name: true,
+      aiTool: true,
+      orgId: true,
+      encryptedCookies: true,
+      encryptedToken: true,
+    },
+  })
   if (!account) {
     return NextResponse.json(
       { error: { code: 'NOT_FOUND', message: '계정을 찾을 수 없습니다' } },
@@ -20,16 +31,26 @@ export async function POST(_req: Request, { params }: Params) {
     )
   }
 
-  if (account.aiTool !== 'claude' || !account.orgId || !account.encryptedCookies) {
+  const isCodex = account.aiTool === 'codex'
+
+  if (!isCodex && (!account.orgId || !account.encryptedCookies)) {
     return NextResponse.json(
-      { error: { code: 'UNSUPPORTED', message: `${account.aiTool} 계정은 사용량 수집을 지원하지 않습니다` } },
+      { error: { code: 'UNSUPPORTED', message: 'Claude 계정에 orgId 또는 쿠키가 없습니다' } },
+      { status: 400 }
+    )
+  }
+
+  if (isCodex && !account.encryptedToken) {
+    return NextResponse.json(
+      { error: { code: 'UNSUPPORTED', message: 'Codex 계정에 토큰이 없습니다. 토큰을 먼저 등록해주세요.' } },
       { status: 400 }
     )
   }
 
   try {
-    const cookiesJson = decrypt(account.encryptedCookies)
-    const usage = await fetchUsage(account.orgId, cookiesJson)
+    const usage = isCodex
+      ? await fetchCodexUsage(decrypt(account.encryptedToken!), account.name)
+      : await fetchUsage(account.orgId!, decrypt(account.encryptedCookies!))
 
     const predictExceed5h = (usage.utilization5h ?? 0) >= EXCEED_THRESHOLD
     const predictExceed7d = (usage.utilization7d ?? 0) >= EXCEED_THRESHOLD
@@ -60,7 +81,7 @@ export async function POST(_req: Request, { params }: Params) {
       data: {
         lastFetchedAt: new Date(),
         lastError: null,
-        ...(usage.cookieExpiresAt && { cookieExpiresAt: usage.cookieExpiresAt }),
+        ...(!isCodex && usage.cookieExpiresAt && { cookieExpiresAt: usage.cookieExpiresAt }),
       },
     })
 
@@ -78,7 +99,7 @@ export async function POST(_req: Request, { params }: Params) {
     return NextResponse.json({ data: { success: true, utilization5h: usage.utilization5h, utilization7d: usage.utilization7d } })
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
-    const alertType = err instanceof CookieExpiredError ? 'FETCH_ERROR' : 'FETCH_ERROR'
+    const alertType = (err instanceof CookieExpiredError || err instanceof TokenExpiredError) ? 'FETCH_ERROR' : 'FETCH_ERROR'
 
     await prisma.account.update({
       where: { id: account.id },

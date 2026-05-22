@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { fetchUsage, CookieExpiredError } from '@/lib/claude-api'
+import { fetchCodexUsage, TokenExpiredError } from '@/lib/codex-api'
 import { decrypt } from '@/lib/crypto'
 import { isExpiringSoon } from '@/lib/prediction'
 import { sendAlert } from '@/lib/alert'
@@ -31,36 +32,46 @@ export async function POST(req: Request) {
 
 async function runCollect() {
   const accounts = await prisma.account.findMany({
-    where: { isActive: true, aiTool: 'claude' },
+    where: { isActive: true },
   })
 
-  // 동시 요청 시 Claude.ai 세션 충돌 방지 — 순차 실행 + 3초 간격
-  const results: PromiseSettledResult<void>[] = []
-  for (let i = 0; i < accounts.length; i++) {
+  const claudeAccounts = accounts.filter(a => a.aiTool === 'claude')
+  const codexAccounts = accounts.filter(a => a.aiTool === 'codex')
+
+  // Claude: 세션 충돌 방지 — 순차 실행 + 3초 간격
+  const claudeResults: PromiseSettledResult<void>[] = []
+  for (let i = 0; i < claudeAccounts.length; i++) {
     if (i > 0) await new Promise(r => setTimeout(r, 3000))
-    results.push(
-      await collectAccount(accounts[i])
+    claudeResults.push(
+      await collectClaudeAccount(claudeAccounts[i])
         .then(() => ({ status: 'fulfilled' as const, value: undefined }))
         .catch((reason) => ({ status: 'rejected' as const, reason }))
     )
   }
 
-  const collected = results.filter(r => r.status === 'fulfilled').length
-  const errors = results
-    .map((r, i) => ({ r, account: accounts[i] }))
+  // Codex: 병렬 수집
+  const codexResults = await Promise.allSettled(
+    codexAccounts.map(a => collectCodexAccount(a))
+  )
+
+  const allResults = [...claudeResults, ...codexResults]
+  const allAccounts = [...claudeAccounts, ...codexAccounts]
+
+  const collected = allResults.filter(r => r.status === 'fulfilled').length
+  const errors = allResults
+    .map((r, i) => ({ r, account: allAccounts[i] }))
     .filter(({ r }) => r.status === 'rejected')
     .map(({ r, account }) => `[${account.name}] ${String((r as PromiseRejectedResult).reason)}`)
 
-  return NextResponse.json({ collected, errors, total: accounts.length })
+  return NextResponse.json({ collected, errors, total: allAccounts.length })
 }
 
-async function collectAccount(account: {
+async function collectClaudeAccount(account: {
   id: string
   name: string
   orgId: string | null
   encryptedCookies: string | null
 }) {
-  // aiTool='claude' 필터가 이미 걸려 있어 orgId/encryptedCookies 모두 not-null로 등록되어야 함
   if (!account.orgId || !account.encryptedCookies) {
     throw new Error(`Claude 계정 ${account.name}에 orgId 또는 cookies가 없습니다`)
   }
@@ -127,6 +138,71 @@ async function collectAccount(account: {
     })
 
     await sendAlert(account.id, account.name, alertType, message)
+    throw err
+  }
+}
+
+async function collectCodexAccount(account: {
+  id: string
+  name: string
+  encryptedToken: string | null
+}) {
+  if (!account.encryptedToken) {
+    throw new Error(`Codex 계정 ${account.name}에 토큰이 없습니다`)
+  }
+
+  try {
+    const token = decrypt(account.encryptedToken)
+    const usage = await fetchCodexUsage(token, account.name)
+
+    const predictExceed5h = (usage.utilization5h ?? 0) >= EXCEED_THRESHOLD
+    const predictExceed7d = (usage.utilization7d ?? 0) >= EXCEED_THRESHOLD
+
+    await prisma.usageLog.create({
+      data: {
+        accountId: account.id,
+        rawResponse: usage.rawResponse as object,
+        utilization5h: usage.utilization5h,
+        resetAt5h: usage.resetAt5h,
+        utilization7d: usage.utilization7d,
+        resetAt7d: usage.resetAt7d,
+        utilization7dSonnet: usage.utilization7dSonnet,
+        resetAt7dSonnet: usage.resetAt7dSonnet,
+        usedMessages: null,
+        totalMessages: null,
+        usagePercent: null,
+        expiresAt: null,
+        planName: null,
+        resetAt: null,
+        predictExceed5h,
+        predictExceed7d,
+      },
+    })
+
+    await prisma.account.update({
+      where: { id: account.id },
+      data: { lastFetchedAt: new Date(), lastError: null },
+    })
+
+    if (predictExceed5h) {
+      await sendAlert(account.id, account.name, 'EXCEED_5H', `5시간 윈도우 사용량 ${usage.utilization5h}% (90% 초과)`)
+    } else if (predictExceed7d) {
+      await sendAlert(account.id, account.name, 'EXCEED_7D', `7일 윈도우 사용량 ${usage.utilization7d}% (90% 초과)`)
+    }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
+
+    await prisma.account.update({
+      where: { id: account.id },
+      data: { lastError: message },
+    })
+
+    await sendAlert(
+      account.id,
+      account.name,
+      err instanceof TokenExpiredError ? 'FETCH_ERROR' : 'FETCH_ERROR',
+      message,
+    )
     throw err
   }
 }

@@ -20,10 +20,15 @@ model Account {
   sortOrder           Int             @default(0)
   isActive            Boolean         @default(true)
 
-  // Claude 수집 (Codex는 null)
+  // Claude 수집
   orgId               String?         @unique
   encryptedCookies    String?
   cookieExpiresAt     DateTime?
+
+  // Codex 수집
+  encryptedToken      String?
+  tokenExpiresAt      DateTime?
+
   lastFetchedAt       DateTime?
   lastError           String?
 

@@ -30,6 +30,7 @@ interface Account {
   isShared: string | null
   note: string | null
   cookieExpiresAt: string | null
+  tokenExpiresAt: string | null
   lastFetchedAt: string | null
   lastMemberSyncedAt: string | null
   lastError: string | null
@@ -73,14 +74,19 @@ function CookieExpiry({ expiresAt }: { expiresAt: string | null }) {
 }
 
 function MemberPanel({ account }: { account: Account }) {
-  const { members, note, isShared, orgId, deviceId, cookieExpiresAt, lastMemberSyncedAt } = account
+  const { members, note, isShared, orgId, deviceId, cookieExpiresAt, tokenExpiresAt, lastMemberSyncedAt } = account
   return (
     <div className="bg-muted/30 border-t px-6 py-4 space-y-4">
       {/* 메타 정보 (작게) */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-1 text-xs text-muted-foreground">
         <div><span className="font-medium text-foreground">orgId:</span> <span className="font-mono">{orgId ?? '-'}</span></div>
         <div><span className="font-medium text-foreground">deviceId:</span> <span className="font-mono">{deviceId ? deviceId.slice(0, 12) + '…' : '-'}</span></div>
-        <div><span className="font-medium text-foreground">쿠키 만료:</span> <CookieExpiry expiresAt={cookieExpiresAt} /></div>
+        {cookieExpiresAt && (
+          <div><span className="font-medium text-foreground">쿠키 만료:</span> <CookieExpiry expiresAt={cookieExpiresAt} /></div>
+        )}
+        {tokenExpiresAt && (
+          <div><span className="font-medium text-foreground">토큰 만료:</span> <CookieExpiry expiresAt={tokenExpiresAt} /></div>
+        )}
         <div><span className="font-medium text-foreground">공유 상태:</span> {isShared ?? '-'}</div>
         {note && (
           <div className="col-span-2 md:col-span-4">
@@ -335,8 +341,8 @@ export default function AccountsPage() {
                               size="sm"
                               variant="outline"
                               onClick={() => handleSync(acc.id)}
-                              disabled={syncingId === acc.id || acc.aiTool !== 'claude'}
-                              title={acc.aiTool !== 'claude' ? `${acc.aiTool}는 수집 미지원` : '지금 동기화'}
+                              disabled={syncingId === acc.id}
+                              title="지금 동기화"
                             >
                               {syncingId === acc.id ? '...' : '↻'}
                             </Button>

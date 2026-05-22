@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import { AccountCard, type AccountLatest } from '@/components/dashboard/AccountCard'
+import type { AiTool } from '@prisma/client'
 import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
 
@@ -8,12 +9,13 @@ async function getLatestUsage(): Promise<AccountLatest[]> {
   const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1000)
 
   const accounts = await prisma.account.findMany({
-    where: { isActive: true, hiddenFromDashboard: false, aiTool: 'claude' },
+    where: { isActive: true, hiddenFromDashboard: false },
     orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
     select: {
       id: true,
       name: true,
       alias: true,
+      aiTool: true,
       orgId: true,
       lastFetchedAt: true,
       lastError: true,
@@ -46,6 +48,7 @@ async function getLatestUsage(): Promise<AccountLatest[]> {
     id: acc.id,
     name: acc.name,
     alias: acc.alias,
+    aiTool: acc.aiTool as AiTool,
     orgId: acc.orgId,
     lastFetchedAt: acc.lastFetchedAt,
     lastError: acc.lastError,

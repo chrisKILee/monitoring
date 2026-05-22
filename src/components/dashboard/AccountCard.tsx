@@ -25,6 +25,7 @@ export interface AccountLatest {
   id: string
   name: string
   alias: string | null
+  aiTool?: 'claude' | 'codex'
   orgId: string
   lastFetchedAt: string | null
   lastError: string | null
@@ -393,7 +394,7 @@ export function AccountCard({ account }: { account: AccountLatest }) {
               now={now}
             />
             <Grid7dBar
-              label="7일 (Sonnet)"
+              label={account.aiTool === 'codex' ? '7일 (Spark)' : '7일 (Sonnet)'}
               value={latest.utilization7dSonnet}
               resetAt={latest.resetAt7dSonnet}
               now={now}

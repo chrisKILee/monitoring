@@ -22,6 +22,7 @@ export function AccountForm({ open, onClose, onSuccess, account }: Props) {
   const [alias, setAlias] = useState(account?.alias ?? '')
   const [aiTool, setAiTool] = useState<AiTool>(account?.aiTool ?? 'claude')
   const [cookiesJson, setCookiesJson] = useState('')
+  const [tokenInput, setTokenInput] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
@@ -31,6 +32,7 @@ export function AccountForm({ open, onClose, onSuccess, account }: Props) {
       setAlias(account?.alias ?? '')
       setAiTool(account?.aiTool ?? 'claude')
       setCookiesJson('')
+      setTokenInput('')
       setError(null)
     }
   }, [open, account])
@@ -45,6 +47,10 @@ export function AccountForm({ open, onClose, onSuccess, account }: Props) {
         setError('Claude 계정은 쿠키 JSON 입력이 필요합니다')
         return
       }
+      if (!isEdit && aiTool === 'codex' && !tokenInput.trim()) {
+        setError('Codex 계정은 Bearer 토큰 입력이 필요합니다')
+        return
+      }
 
       const url = isEdit ? `/api/accounts/${account!.id}` : '/api/accounts'
       const method = isEdit ? 'PUT' : 'POST'
@@ -55,6 +61,8 @@ export function AccountForm({ open, onClose, onSuccess, account }: Props) {
       }
       if (!isEdit && aiTool === 'claude') body.cookiesJson = cookiesJson
       if (isEdit && cookiesJson.trim()) body.cookiesJson = cookiesJson
+      if (!isEdit && aiTool === 'codex') body.tokenInput = tokenInput
+      if (isEdit && tokenInput.trim()) body.tokenInput = tokenInput
 
       const res = await fetch(url, {
         method,
@@ -130,8 +138,14 @@ export function AccountForm({ open, onClose, onSuccess, account }: Props) {
               </p>
             </div>
           ) : (
-            <div className="rounded-md border border-dashed border-border bg-muted/30 p-3 text-xs text-muted-foreground">
-              Codex 계정은 메타데이터만 등록됩니다. 사용량 수집은 추후 별도 연동 예정입니다.
+            <div className="space-y-1">
+              <Label htmlFor="token">Bearer 토큰 {isEdit && <span className="text-muted-foreground">(변경 시에만 입력)</span>}</Label>
+              <Textarea id="token" value={tokenInput} onChange={e => setTokenInput(e.target.value)}
+                placeholder={'curl 명령어 전체 또는 eyJ...로 시작하는 JWT 토큰 붙여넣기'}
+                className="font-mono text-xs resize-none overflow-auto break-all h-24" required={!isEdit} />
+              <p className="text-xs text-muted-foreground">
+                chatgpt.com/codex → Network 탭 우클릭 → <strong>Copy as cURL</strong> → 여기에 붙여넣기
+              </p>
             </div>
           )}
 

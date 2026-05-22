@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { AiTool } from '@prisma/client'
 import { encrypt, decrypt } from '@/lib/crypto'
+import { extractBearerToken, parseTokenExpiry } from '@/lib/codex-api'
 
 export async function GET() {
   const accounts = await prisma.account.findMany({
@@ -19,6 +20,7 @@ export async function GET() {
       isShared: true,
       note: true,
       cookieExpiresAt: true,
+      tokenExpiresAt: true,
       encryptedCookies: true,
       lastFetchedAt: true,
       lastMemberSyncedAt: true,
@@ -116,6 +118,7 @@ export async function POST(req: Request) {
       name?: string
       alias?: string | null
       cookiesJson?: string
+      tokenInput?: string
       aiTool?: AiTool
       hiddenFromDashboard?: boolean
     }
@@ -186,12 +189,31 @@ export async function POST(req: Request) {
       return NextResponse.json({ data: account }, { status: 201 })
     }
 
-    // Codex: 메타데이터만 등록 (orgId/cookies null)
+    // Codex: Bearer 토큰 등록
+    if (!body.tokenInput) {
+      return NextResponse.json(
+        { error: { code: 'VALIDATION_ERROR', message: 'Codex 계정은 Bearer 토큰이 필수입니다. curl 명령어 또는 JWT 토큰을 붙여넣어 주세요.' } },
+        { status: 400 }
+      )
+    }
+
+    const token = extractBearerToken(body.tokenInput)
+    if (!token) {
+      return NextResponse.json(
+        { error: { code: 'VALIDATION_ERROR', message: '토큰 형식이 올바르지 않습니다. curl 명령어 전체 또는 eyJ...로 시작하는 JWT를 붙여넣어 주세요.' } },
+        { status: 400 }
+      )
+    }
+
+    const tokenExpiresAt = parseTokenExpiry(token)
+
     const account = await prisma.account.create({
       data: {
         name: body.name,
         alias: body.alias ?? null,
         aiTool,
+        encryptedToken: encrypt(token),
+        tokenExpiresAt,
         hiddenFromDashboard: body.hiddenFromDashboard ?? false,
         sortOrder: nextSortOrder,
       },
