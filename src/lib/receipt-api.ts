@@ -101,7 +101,7 @@ export async function fetchClaudeInvoices(orgId: string, encryptedCookies: strin
   if (!res.ok) {
     const body = await res.text().catch(() => '')
     console.error(`[receipt] Claude invoices ${orgId} HTTP ${res.status}:`, body.slice(0, 300))
-    throw new Error(`Claude invoices HTTP ${res.status}`)
+    throw new Error(`Claude invoices HTTP ${res.status}: ${body.slice(0, 200)}`)
   }
   const data = await res.json() as ClaudeInvoice[] | { data?: ClaudeInvoice[] } | undefined
   console.log(`[receipt] Claude invoices ${orgId}: raw type=${Array.isArray(data) ? 'array' : typeof data}, keys=${data && !Array.isArray(data) ? Object.keys(data).join(',') : '-'}`)
@@ -124,7 +124,7 @@ export async function fetchClaudeSubscription(orgId: string, encryptedCookies: s
   if (!res.ok) {
     const body = await res.text().catch(() => '')
     console.error(`[receipt] Claude subscription ${orgId} HTTP ${res.status}:`, body.slice(0, 300))
-    throw new Error(`Claude subscription HTTP ${res.status}`)
+    throw new Error(`Claude subscription HTTP ${res.status}: ${body.slice(0, 200)}`)
   }
   const data = await res.json() as ClaudeSubscription
   console.log(`[receipt] Claude subscription ${orgId}: keys=${Object.keys(data).join(',')}`)
@@ -139,7 +139,7 @@ export async function fetchCodexInvoices(token: string, accountId: string): Prom
   if (!res.ok) {
     const body = await res.text().catch(() => '')
     console.error(`[receipt] Codex invoices ${accountId} HTTP ${res.status}:`, body.slice(0, 300))
-    throw new Error(`Codex invoices HTTP ${res.status}`)
+    throw new Error(`Codex invoices HTTP ${res.status}: ${body.slice(0, 200)}`)
   }
   const data = await res.json() as { items?: CodexInvoice[] } | CodexInvoice[] | undefined
   console.log(`[receipt] Codex invoices ${accountId}: raw type=${Array.isArray(data) ? 'array' : typeof data}, keys=${data && !Array.isArray(data) ? Object.keys(data).join(',') : '-'}`)

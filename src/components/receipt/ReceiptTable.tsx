@@ -185,8 +185,8 @@ export function ReceiptTable() {
                     <p className="font-medium">{row.alias ?? row.email}</p>
                     {row.alias && <p className="text-xs text-muted-foreground">{row.email}</p>}
                     {row.error && (
-                      <p className="text-xs text-red-500 mt-0.5" title={row.error}>
-                        오류: {row.error.slice(0, 40)}{row.error.length > 40 ? '…' : ''}
+                      <p className="text-xs text-red-500 mt-0.5 break-all">
+                        {row.error}
                       </p>
                     )}
                   </div>
