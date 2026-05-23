@@ -10,6 +10,7 @@ interface UserPermission {
   serviceAccWrite: boolean
   monitoringRead: boolean
   monitoringWrite: boolean
+  receiptRead: boolean
 }
 
 interface AppUser {
@@ -27,6 +28,7 @@ const PERM_LABELS: { key: keyof UserPermission; label: string }[] = [
   { key: 'serviceAccWrite', label: '계정관리 W' },
   { key: 'monitoringRead', label: '모니터링 R' },
   { key: 'monitoringWrite', label: '모니터링 W' },
+  { key: 'receiptRead', label: '청구서 R' },
 ]
 
 export function AdminUsersTable({ initialUsers }: { initialUsers: AppUser[] }) {
@@ -45,6 +47,7 @@ export function AdminUsersTable({ initialUsers }: { initialUsers: AppUser[] }) {
       serviceAccWrite: false,
       monitoringRead: false,
       monitoringWrite: false,
+      receiptRead: false,
       ...p,
     }
   }
@@ -112,6 +115,7 @@ export function AdminUsersTable({ initialUsers }: { initialUsers: AppUser[] }) {
               <th className="text-left p-3 font-medium">역할</th>
               <th className="text-left p-3 font-medium">계정관리</th>
               <th className="text-left p-3 font-medium">모니터링</th>
+              <th className="text-left p-3 font-medium">청구서</th>
               <th className="text-left p-3 font-medium">가입일</th>
               <th className="text-right p-3 font-medium">저장</th>
             </tr>
@@ -206,6 +210,23 @@ export function AdminUsersTable({ initialUsers }: { initialUsers: AppUser[] }) {
                           Write
                         </label>
                       </div>
+                    )}
+                  </td>
+
+                  {/* 청구서 권한 */}
+                  <td className="p-3">
+                    {isAdmin ? (
+                      <span className="text-xs text-muted-foreground">전체</span>
+                    ) : (
+                      <label className="flex items-center gap-1 cursor-pointer text-xs">
+                        <input
+                          type="checkbox"
+                          checked={perms.receiptRead}
+                          onChange={() => togglePerm(user.id, 'receiptRead', perms.receiptRead)}
+                          className="w-3.5 h-3.5"
+                        />
+                        Read
+                      </label>
                     )}
                   </td>
 

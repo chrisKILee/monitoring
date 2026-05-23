@@ -161,6 +161,7 @@ model UserPermission {
   serviceAccWrite Boolean @default(false)
   monitoringRead  Boolean @default(false)
   monitoringWrite Boolean @default(false)
+  receiptRead     Boolean @default(false)
   user            AppUser @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_permission")

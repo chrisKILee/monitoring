@@ -27,6 +27,7 @@ export function Nav() {
   const links = [
     { href: '/dashboard', label: '대시보드', always: true },
     { href: '/accounts', label: '계정 관리', always: isAdmin },
+    { href: '/receipt', label: '청구서', always: isAdmin },
     { href: '/admin', label: '관리계정 관리', always: isAdmin, adminOnly: true },
     { href: '/themes', label: '테마', always: isAdmin, adminOnly: true },
   ].filter((l) => l.always)
