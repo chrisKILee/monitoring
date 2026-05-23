@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { getPermissions } from '@/lib/auth-utils'
 import { prisma } from '@/lib/prisma'
-import { buildClaudeReceiptRow, buildCodexReceiptRow } from '@/lib/receipt-api'
 
 export async function GET(req: Request) {
   const session = await auth()
@@ -24,45 +23,39 @@ export async function GET(req: Request) {
     }
   }
 
-  const accounts = await prisma.account.findMany({
-    where: { isActive: true },
-    select: {
-      id: true,
-      name: true,
-      alias: true,
-      aiTool: true,
-      orgId: true,
-      encryptedCookies: true,
-      encryptedToken: true,
+  const year = parseInt(yyyymm.slice(0, 4))
+  const month = parseInt(yyyymm.slice(4, 6)) - 1 // 0-indexed
+  const start = new Date(Date.UTC(year, month, 1))
+  const end = new Date(Date.UTC(year, month + 1, 1))
+
+  const receipts = await prisma.receipt.findMany({
+    where: {
+      invoiceDate: { gte: start, lt: end },
     },
-    orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+    include: {
+      account: { select: { name: true, alias: true } },
+    },
+    orderBy: [{ aiTool: 'asc' }, { invoiceDate: 'desc' }],
   })
 
-  const claudeAccounts = accounts.filter(
-    a => a.aiTool === 'claude' && a.orgId && a.encryptedCookies
-  ) as Array<typeof accounts[0] & { orgId: string; encryptedCookies: string }>
-
-  const codexAccounts = accounts.filter(
-    a => a.aiTool === 'codex' && a.encryptedToken
-  ) as Array<typeof accounts[0] & { encryptedToken: string }>
-
-  const [claudeResults, codexResults] = await Promise.all([
-    Promise.allSettled(claudeAccounts.map(a => buildClaudeReceiptRow(a, yyyymm))),
-    Promise.allSettled(codexAccounts.map(a => buildCodexReceiptRow(a, yyyymm))),
-  ])
-
-  const rows = [
-    ...claudeResults.map((r, i) =>
-      r.status === 'fulfilled'
-        ? r.value
-        : { accountId: claudeAccounts[i].id, aiTool: 'claude' as const, email: claudeAccounts[i].name, alias: claudeAccounts[i].alias, invoiceDate: null, amount: null, currency: null, status: null, last4: null, billingInterval: null, nextChargeDate: null, error: String((r as PromiseRejectedResult).reason) }
-    ),
-    ...codexResults.map((r, i) =>
-      r.status === 'fulfilled'
-        ? r.value
-        : { accountId: codexAccounts[i].id, aiTool: 'codex' as const, email: codexAccounts[i].name, alias: codexAccounts[i].alias, invoiceDate: null, amount: null, currency: null, status: null, last4: null, billingInterval: null, nextChargeDate: null, error: String((r as PromiseRejectedResult).reason) }
-    ),
-  ]
+  const rows = receipts.map(r => ({
+    id: r.id,
+    invoiceNumber: r.invoiceNumber,
+    receiptNumber: r.receiptNumber,
+    aiTool: r.aiTool as 'claude' | 'codex',
+    email: r.email,
+    alias: r.account?.alias ?? null,
+    accountName: r.account?.name ?? null,
+    invoiceDate: r.invoiceDate.toISOString(),
+    amountExclTax: r.amountExclTax,
+    currency: r.currency,
+    status: r.status,
+    last4: r.last4,
+    description: r.description,
+    periodStart: r.periodStart?.toISOString() ?? null,
+    periodEnd: r.periodEnd?.toISOString() ?? null,
+    nextChargeDate: r.nextChargeDate?.toISOString() ?? null,
+  }))
 
   return NextResponse.json({ yyyymm, rows })
 }

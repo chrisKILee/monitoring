@@ -46,6 +46,7 @@ model Account {
   alertLogs           AlertLog[]
   usageLogs           UsageLog[]
   members             AccountMember[]
+  receipts            Receipt[]
 }
 
 model Member {
@@ -185,4 +186,29 @@ model Setting {
   updatedAt DateTime @updatedAt
 
   @@map("setting")
+}
+
+model Receipt {
+  id              String    @id @default(cuid())
+  invoiceNumber   String    @unique
+  receiptNumber   String
+  aiTool          AiTool
+  accountId       String?
+  email           String
+  invoiceDate     DateTime
+  amountExclTax   Float
+  currency        String
+  status          String    @default("paid")
+  last4           String?
+  description     String?
+  periodStart     DateTime?
+  periodEnd       DateTime?
+  nextChargeDate  DateTime?
+  createdAt       DateTime  @default(now())
+
+  account         Account?  @relation(fields: [accountId], references: [id], onDelete: SetNull)
+
+  @@index([invoiceDate])
+  @@index([email])
+  @@map("receipt")
 }

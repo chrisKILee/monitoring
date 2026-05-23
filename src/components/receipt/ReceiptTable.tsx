@@ -1,21 +1,24 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import { Badge } from '@/components/ui/badge'
+import { useState, useEffect, useCallback, useRef } from 'react'
 
 interface ReceiptRow {
-  accountId: string
+  id: string
+  invoiceNumber: string
+  receiptNumber: string
   aiTool: 'claude' | 'codex'
   email: string
   alias: string | null
-  invoiceDate: string | null
-  amount: number | null
-  currency: string | null
-  status: string | null
+  accountName: string | null
+  invoiceDate: string
+  amountExclTax: number
+  currency: string
+  status: string
   last4: string | null
-  billingInterval: string | null
+  description: string | null
+  periodStart: string | null
+  periodEnd: string | null
   nextChargeDate: string | null
-  error?: string
 }
 
 function currentYyyymm(): string {
@@ -41,30 +44,33 @@ function formatYyyymm(yyyymm: string): string {
   return `${yyyymm.slice(0, 4)}년 ${yyyymm.slice(4, 6)}월`
 }
 
-function formatAmount(amount: number | null, currency: string | null): string {
-  if (amount === null) return '-'
-  const cur = (currency ?? 'usd').toUpperCase()
-  // Stripe amounts are in the smallest currency unit (cents for USD)
-  const divisor = cur === 'KRW' || cur === 'JPY' ? 1 : 100
-  const value = amount / divisor
+function formatAmount(amount: number, currency: string): string {
+  const cur = currency.toUpperCase()
   try {
-    return new Intl.NumberFormat('ko-KR', { style: 'currency', currency: cur, maximumFractionDigits: 0 }).format(value)
+    return new Intl.NumberFormat('ko-KR', {
+      style: 'currency',
+      currency: cur,
+      maximumFractionDigits: cur === 'KRW' || cur === 'JPY' ? 0 : 2,
+    }).format(amount)
   } catch {
-    return `${value.toLocaleString()} ${cur}`
+    return `${amount.toLocaleString()} ${cur}`
   }
 }
 
 function formatDate(dateStr: string | null): string {
   if (!dateStr) return '-'
   try {
-    return new Date(dateStr).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' })
+    return new Date(dateStr).toLocaleDateString('ko-KR', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    })
   } catch {
     return dateStr
   }
 }
 
-function StatusBadge({ status }: { status: string | null }) {
-  if (!status) return <span className="text-muted-foreground text-xs">-</span>
+function StatusBadge({ status }: { status: string }) {
   const variants: Record<string, string> = {
     paid: 'bg-green-100 text-green-700 border-green-300 dark:bg-green-900/30 dark:text-green-400',
     open: 'bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900/30 dark:text-blue-400',
@@ -100,6 +106,9 @@ export function ReceiptTable() {
   const [rows, setRows] = useState<ReceiptRow[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [uploading, setUploading] = useState(false)
+  const [uploadResult, setUploadResult] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const monthOptions = buildMonthOptions()
 
   const fetchData = useCallback(async (ym: string) => {
@@ -122,6 +131,37 @@ export function ReceiptTable() {
 
   useEffect(() => { fetchData(yyyymm) }, [yyyymm, fetchData])
 
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+
+    setUploading(true)
+    setUploadResult(null)
+
+    const results: string[] = []
+    for (const file of Array.from(files)) {
+      const fd = new FormData()
+      fd.append('file', file)
+      try {
+        const res = await fetch('/api/receipt/upload', { method: 'POST', body: fd })
+        const body = await res.json() as { error?: string; receipt?: { invoiceNumber: string }; accountLinked?: boolean }
+        if (!res.ok) {
+          results.push(`${file.name}: ❌ ${body.error ?? 'HTTP ' + res.status}`)
+        } else {
+          const linked = body.accountLinked ? ' (계정 연결됨)' : ''
+          results.push(`${file.name}: ✅ ${body.receipt?.invoiceNumber}${linked}`)
+        }
+      } catch (err) {
+        results.push(`${file.name}: ❌ ${err instanceof Error ? err.message : String(err)}`)
+      }
+    }
+
+    setUploadResult(results.join('\n'))
+    setUploading(false)
+    if (fileInputRef.current) fileInputRef.current.value = ''
+    fetchData(yyyymm)
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -129,16 +169,39 @@ export function ReceiptTable() {
           <h1 className="text-2xl font-bold">청구서</h1>
           <p className="text-sm text-muted-foreground">Claude · Codex 계정 월별 청구 내역</p>
         </div>
-        <select
-          value={yyyymm}
-          onChange={e => setYyyymm(e.target.value)}
-          className="border rounded px-3 py-1.5 text-sm bg-background text-foreground"
-        >
-          {monthOptions.map(opt => (
-            <option key={opt} value={opt}>{formatYyyymm(opt)}</option>
-          ))}
-        </select>
+        <div className="flex items-center gap-2">
+          <select
+            value={yyyymm}
+            onChange={e => setYyyymm(e.target.value)}
+            className="border rounded px-3 py-1.5 text-sm bg-background text-foreground"
+          >
+            {monthOptions.map(opt => (
+              <option key={opt} value={opt}>{formatYyyymm(opt)}</option>
+            ))}
+          </select>
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+            className="inline-flex items-center gap-1.5 rounded px-3 py-1.5 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+          >
+            {uploading ? '업로드 중...' : 'PDF 업로드'}
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".pdf"
+            multiple
+            className="hidden"
+            onChange={handleFileChange}
+          />
+        </div>
       </div>
+
+      {uploadResult && (
+        <div className="rounded-lg border border-border bg-muted/30 p-3 text-sm whitespace-pre-line">
+          {uploadResult}
+        </div>
+      )}
 
       {error && (
         <div className="rounded-lg border border-red-300 bg-red-50 dark:bg-red-900/20 p-4 text-sm text-red-700 dark:text-red-400">
@@ -152,55 +215,57 @@ export function ReceiptTable() {
             <tr>
               <th className="text-left p-3 font-medium">도구</th>
               <th className="text-left p-3 font-medium">계정</th>
+              <th className="text-left p-3 font-medium">플랜</th>
               <th className="text-left p-3 font-medium">결제일</th>
               <th className="text-right p-3 font-medium">결제금액</th>
               <th className="text-left p-3 font-medium">상태</th>
               <th className="text-left p-3 font-medium">결제카드</th>
-              <th className="text-left p-3 font-medium">빌링구분</th>
+              <th className="text-left p-3 font-medium">청구기간</th>
               <th className="text-left p-3 font-medium">다음결제일</th>
             </tr>
           </thead>
           <tbody>
             {loading && (
               <tr>
-                <td colSpan={8} className="p-8 text-center text-muted-foreground">
+                <td colSpan={9} className="p-8 text-center text-muted-foreground">
                   조회 중...
                 </td>
               </tr>
             )}
             {!loading && rows.length === 0 && !error && (
               <tr>
-                <td colSpan={8} className="p-8 text-center text-muted-foreground">
+                <td colSpan={9} className="p-8 text-center text-muted-foreground">
                   {formatYyyymm(yyyymm)} 청구 내역이 없습니다.
+                  <span className="block mt-1 text-xs">PDF를 업로드하면 자동으로 파싱됩니다.</span>
                 </td>
               </tr>
             )}
             {!loading && rows.map(row => (
-              <tr key={row.accountId} className={`border-t hover:bg-muted/10 ${row.error ? 'opacity-60' : ''}`}>
+              <tr key={row.id} className="border-t hover:bg-muted/10">
                 <td className="p-3">
                   <ToolBadge tool={row.aiTool} />
                 </td>
                 <td className="p-3">
-                  <div>
-                    <p className="font-medium">{row.alias ?? row.email}</p>
-                    {row.alias && <p className="text-xs text-muted-foreground">{row.email}</p>}
-                    {row.error && (
-                      <p className="text-xs text-red-500 mt-0.5 break-all">
-                        {row.error}
-                      </p>
-                    )}
-                  </div>
+                  <p className="font-medium">{row.alias ?? row.accountName ?? row.email}</p>
+                  {(row.alias || row.accountName) && (
+                    <p className="text-xs text-muted-foreground">{row.email}</p>
+                  )}
+                </td>
+                <td className="p-3 text-muted-foreground text-xs max-w-[160px] truncate" title={row.description ?? undefined}>
+                  {row.description ?? '-'}
                 </td>
                 <td className="p-3 text-muted-foreground">{formatDate(row.invoiceDate)}</td>
                 <td className="p-3 text-right font-mono">
-                  {formatAmount(row.amount, row.currency)}
+                  {formatAmount(row.amountExclTax, row.currency)}
                 </td>
                 <td className="p-3"><StatusBadge status={row.status} /></td>
                 <td className="p-3 text-muted-foreground">
                   {row.last4 ? `**** ${row.last4}` : '-'}
                 </td>
-                <td className="p-3 text-muted-foreground">
-                  {row.billingInterval === 'month' ? '월간' : row.billingInterval === 'year' ? '연간' : (row.billingInterval ?? '-')}
+                <td className="p-3 text-muted-foreground text-xs">
+                  {row.periodStart && row.periodEnd
+                    ? `${formatDate(row.periodStart)} ~ ${formatDate(row.periodEnd)}`
+                    : '-'}
                 </td>
                 <td className="p-3 text-muted-foreground">{formatDate(row.nextChargeDate)}</td>
               </tr>
@@ -211,7 +276,7 @@ export function ReceiptTable() {
 
       {!loading && rows.length > 0 && (
         <p className="text-xs text-muted-foreground text-right">
-          총 {rows.length}개 계정 · {rows.filter(r => !r.error).length}개 조회 성공
+          총 {rows.length}건
         </p>
       )}
     </div>
