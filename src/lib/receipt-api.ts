@@ -98,8 +98,13 @@ export async function fetchClaudeInvoices(orgId: string, encryptedCookies: strin
     `https://claude.ai/api/stripe/${orgId}/invoices?limit=12&page=`,
     { headers: claudeHeaders(cookieHeader) }
   )
-  if (!res.ok) throw new Error(`Claude invoices HTTP ${res.status}`)
+  if (!res.ok) {
+    const body = await res.text().catch(() => '')
+    console.error(`[receipt] Claude invoices ${orgId} HTTP ${res.status}:`, body.slice(0, 300))
+    throw new Error(`Claude invoices HTTP ${res.status}`)
+  }
   const data = await res.json() as ClaudeInvoice[] | { data?: ClaudeInvoice[] } | undefined
+  console.log(`[receipt] Claude invoices ${orgId}: raw type=${Array.isArray(data) ? 'array' : typeof data}, keys=${data && !Array.isArray(data) ? Object.keys(data).join(',') : '-'}`)
   if (Array.isArray(data)) return data
   if (data && 'data' in data && Array.isArray(data.data)) return data.data
   return []
@@ -116,8 +121,14 @@ export async function fetchClaudeSubscription(orgId: string, encryptedCookies: s
     `https://claude.ai/api/organizations/${orgId}/subscription_details`,
     { headers: claudeHeaders(cookieHeader) }
   )
-  if (!res.ok) throw new Error(`Claude subscription HTTP ${res.status}`)
-  return res.json() as Promise<ClaudeSubscription>
+  if (!res.ok) {
+    const body = await res.text().catch(() => '')
+    console.error(`[receipt] Claude subscription ${orgId} HTTP ${res.status}:`, body.slice(0, 300))
+    throw new Error(`Claude subscription HTTP ${res.status}`)
+  }
+  const data = await res.json() as ClaudeSubscription
+  console.log(`[receipt] Claude subscription ${orgId}: keys=${Object.keys(data).join(',')}`)
+  return data
 }
 
 export async function fetchCodexInvoices(token: string, accountId: string): Promise<CodexInvoice[]> {
@@ -125,8 +136,13 @@ export async function fetchCodexInvoices(token: string, accountId: string): Prom
     `https://chatgpt.com/backend-api/invoices?limit=12&account_id=${accountId}`,
     { headers: codexHeaders(token) }
   )
-  if (!res.ok) throw new Error(`Codex invoices HTTP ${res.status}`)
+  if (!res.ok) {
+    const body = await res.text().catch(() => '')
+    console.error(`[receipt] Codex invoices ${accountId} HTTP ${res.status}:`, body.slice(0, 300))
+    throw new Error(`Codex invoices HTTP ${res.status}`)
+  }
   const data = await res.json() as { items?: CodexInvoice[] } | CodexInvoice[] | undefined
+  console.log(`[receipt] Codex invoices ${accountId}: raw type=${Array.isArray(data) ? 'array' : typeof data}, keys=${data && !Array.isArray(data) ? Object.keys(data).join(',') : '-'}`)
   if (Array.isArray(data)) return data
   if (data && 'items' in data && Array.isArray(data.items)) return data.items
   return []
@@ -137,7 +153,11 @@ export async function fetchCodexPaymentMethods(token: string, accountId: string)
     `https://chatgpt.com/backend-api/payments/payment_methods?account_id=${accountId}`,
     { headers: codexHeaders(token) }
   )
-  if (!res.ok) return {}
+  if (!res.ok) {
+    const body = await res.text().catch(() => '')
+    console.error(`[receipt] Codex paymentMethods ${accountId} HTTP ${res.status}:`, body.slice(0, 300))
+    return {}
+  }
   const data = await res.json() as { payment_methods?: CodexPaymentMethod[] } | undefined
   const methods = data?.payment_methods ?? []
   const def = methods.find(m => m.is_default) ?? methods[0]
