@@ -101,6 +101,76 @@ function ToolBadge({ tool }: { tool: 'claude' | 'codex' }) {
   )
 }
 
+function sumByCurrency(rows: ReceiptRow[]): { currency: string; total: number }[] {
+  const map = new Map<string, number>()
+  for (const r of rows) {
+    const cur = r.currency.toUpperCase()
+    map.set(cur, (map.get(cur) ?? 0) + r.amountExclTax)
+  }
+  return [...map.entries()].map(([currency, total]) => ({ currency, total }))
+}
+
+function ReceiptSummary({ rows }: { rows: ReceiptRow[] }) {
+  const claudePaid = rows.filter(r => r.aiTool === 'claude' && r.status === 'paid')
+  const codexPaid  = rows.filter(r => r.aiTool === 'codex'  && r.status === 'paid')
+  const failed     = rows.filter(r => r.status !== 'paid')
+
+  const claudeVar = 'var(--badge-claude)'
+  const codexVar  = 'var(--badge-codex)'
+
+  return (
+    <div className="grid grid-cols-2 gap-3" style={{ gridTemplateColumns: failed.length > 0 ? 'repeat(3,1fr)' : 'repeat(2,1fr)' }}>
+      {/* Claude */}
+      <div className="rounded-lg border p-4 space-y-1"
+        style={{ borderColor: `color-mix(in srgb, ${claudeVar} 35%, transparent)`, background: `color-mix(in srgb, ${claudeVar} 6%, transparent)` }}>
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-semibold tracking-wide uppercase" style={{ color: claudeVar }}>Claude</span>
+        </div>
+        <p className="text-2xl font-bold">{claudePaid.length}<span className="text-sm font-normal text-muted-foreground ml-1">건 paid</span></p>
+        <div className="text-sm text-muted-foreground space-y-0.5">
+          {sumByCurrency(claudePaid).map(({ currency, total }) => (
+            <p key={currency}>{formatAmount(total, currency)}</p>
+          ))}
+          {claudePaid.length === 0 && <p className="text-xs">-</p>}
+        </div>
+      </div>
+
+      {/* Codex */}
+      <div className="rounded-lg border p-4 space-y-1"
+        style={{ borderColor: `color-mix(in srgb, ${codexVar} 35%, transparent)`, background: `color-mix(in srgb, ${codexVar} 6%, transparent)` }}>
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-semibold tracking-wide uppercase" style={{ color: codexVar }}>Codex</span>
+        </div>
+        <p className="text-2xl font-bold">{codexPaid.length}<span className="text-sm font-normal text-muted-foreground ml-1">건 paid</span></p>
+        <div className="text-sm text-muted-foreground space-y-0.5">
+          {sumByCurrency(codexPaid).map(({ currency, total }) => (
+            <p key={currency}>{formatAmount(total, currency)}</p>
+          ))}
+          {codexPaid.length === 0 && <p className="text-xs">-</p>}
+        </div>
+      </div>
+
+      {/* 결제 실패 */}
+      {failed.length > 0 && (
+        <div className="rounded-lg border border-red-300 bg-red-50 dark:bg-red-900/15 p-4 space-y-1">
+          <span className="text-xs font-semibold tracking-wide uppercase text-red-600 dark:text-red-400">결제 실패</span>
+          <p className="text-2xl font-bold text-red-700 dark:text-red-400">
+            {failed.length}<span className="text-sm font-normal text-muted-foreground ml-1">건</span>
+          </p>
+          <ul className="text-xs text-red-600 dark:text-red-400 space-y-0.5">
+            {failed.map(r => (
+              <li key={r.id} className="truncate max-w-[180px]">
+                {r.alias ?? r.accountName ?? r.email}
+                <span className="ml-1 opacity-70">({r.status})</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export function ReceiptTable() {
   const [yyyymm, setYyyymm] = useState(currentYyyymm)
   const [rows, setRows] = useState<ReceiptRow[]>([])
@@ -202,6 +272,8 @@ export function ReceiptTable() {
           {uploadResult}
         </div>
       )}
+
+      {!loading && rows.length > 0 && <ReceiptSummary rows={rows} />}
 
       {error && (
         <div className="rounded-lg border border-red-300 bg-red-50 dark:bg-red-900/20 p-4 text-sm text-red-700 dark:text-red-400">
