@@ -213,12 +213,27 @@ export default function AccountsPage() {
     }
   }
 
+  async function handleToggleActive(acc: Account) {
+    const next = !acc.isActive
+    setAccounts(prev => prev.map(a => a.id === acc.id ? { ...a, isActive: next } : a))
+    const res = await fetch(`/api/accounts/${acc.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ isActive: next }),
+    })
+    if (!res.ok) {
+      setAccounts(prev => prev.map(a => a.id === acc.id ? { ...a, isActive: acc.isActive } : a))
+      alert('수집 상태 변경 실패')
+    }
+  }
+
   const stats = useMemo(() => ({
     total: accounts.length,
     claude: accounts.filter(a => a.aiTool === 'claude').length,
     codex: accounts.filter(a => a.aiTool === 'codex').length,
     visible: accounts.filter(a => !a.hiddenFromDashboard).length,
     hidden: accounts.filter(a => a.hiddenFromDashboard).length,
+    paused: accounts.filter(a => !a.isActive).length,
     totalMembers: accounts.reduce((sum, a) => sum + a.memberCount, 0),
   }), [accounts])
 
@@ -248,12 +263,13 @@ export default function AccountsPage() {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-7 gap-3">
             <StatCard label="전체" value={stats.total} />
             <StatCard label="Claude" value={stats.claude} accent="text-orange-600 dark:text-orange-400" />
             <StatCard label="Codex" value={stats.codex} accent="text-sky-600 dark:text-sky-400" />
             <StatCard label="대시보드 표시" value={stats.visible} accent="text-green-600 dark:text-green-400" />
             <StatCard label="숨김" value={stats.hidden} accent="text-muted-foreground" />
+            <StatCard label="수집 정지" value={stats.paused} accent={stats.paused > 0 ? 'text-yellow-600 dark:text-yellow-400' : 'text-muted-foreground'} />
             <StatCard label="총 멤버" value={stats.totalMembers} accent="text-primary" />
           </div>
 
@@ -309,12 +325,18 @@ export default function AccountsPage() {
                         <td className="p-3"><ToolBadge tool={acc.aiTool} /></td>
                         <td className="p-3 text-muted-foreground hidden lg:table-cell">{acc.phoneAuth ?? '-'}</td>
                         <td className="p-3 text-center font-mono">{acc.memberCount}</td>
-                        <td className="p-3">
-                          {acc.lastError
-                            ? <Badge variant="destructive">오류</Badge>
-                            : acc.isActive
-                              ? <Badge className="bg-green-500 text-white">활성</Badge>
-                              : <Badge variant="secondary">비활성</Badge>}
+                        <td className="p-3" onClick={e => e.stopPropagation()}>
+                          <button
+                            type="button"
+                            onClick={() => handleToggleActive(acc)}
+                            title={acc.isActive ? '수집 중 (클릭=일시정지)' : '수집 정지 (클릭=재개)'}
+                          >
+                            {acc.lastError
+                              ? <Badge variant="destructive">오류</Badge>
+                              : acc.isActive
+                                ? <Badge className="bg-green-500 text-white hover:bg-green-600 cursor-pointer">활성</Badge>
+                                : <Badge className="bg-yellow-500/20 text-yellow-700 border border-yellow-500/40 hover:bg-yellow-500/30 cursor-pointer dark:text-yellow-400">정지</Badge>}
+                          </button>
                         </td>
                         <td className="p-3 text-center" onClick={e => e.stopPropagation()}>
                           <button
