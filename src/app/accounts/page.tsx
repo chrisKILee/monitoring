@@ -325,18 +325,12 @@ export default function AccountsPage() {
                         <td className="p-3"><ToolBadge tool={acc.aiTool} /></td>
                         <td className="p-3 text-muted-foreground hidden lg:table-cell">{acc.phoneAuth ?? '-'}</td>
                         <td className="p-3 text-center font-mono">{acc.memberCount}</td>
-                        <td className="p-3" onClick={e => e.stopPropagation()}>
-                          <button
-                            type="button"
-                            onClick={() => handleToggleActive(acc)}
-                            title={acc.isActive ? '수집 중 (클릭=일시정지)' : '수집 정지 (클릭=재개)'}
-                          >
-                            {acc.lastError
-                              ? <Badge variant="destructive">오류</Badge>
-                              : acc.isActive
-                                ? <Badge className="bg-green-500 text-white hover:bg-green-600 cursor-pointer">활성</Badge>
-                                : <Badge className="bg-yellow-500/20 text-yellow-700 border border-yellow-500/40 hover:bg-yellow-500/30 cursor-pointer dark:text-yellow-400">정지</Badge>}
-                          </button>
+                        <td className="p-3">
+                          {acc.lastError
+                            ? <Badge variant="destructive">오류</Badge>
+                            : acc.isActive
+                              ? <Badge className="bg-green-500 text-white">활성</Badge>
+                              : <Badge className="bg-yellow-500/20 text-yellow-700 border border-yellow-500/40 dark:text-yellow-400">정지</Badge>}
                         </td>
                         <td className="p-3 text-center" onClick={e => e.stopPropagation()}>
                           <button
@@ -367,6 +361,15 @@ export default function AccountsPage() {
                               title="지금 동기화"
                             >
                               {syncingId === acc.id ? '...' : '↻'}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleToggleActive(acc)}
+                              title={acc.isActive ? '수집 일시정지' : '수집 재개'}
+                              className={acc.isActive ? '' : 'border-yellow-500/40 text-yellow-700 dark:text-yellow-400'}
+                            >
+                              {acc.isActive ? '⏸' : '▶'}
                             </Button>
                             <Button size="sm" variant="outline"
                               onClick={() => { setEditTarget(acc); setFormOpen(true) }}>
