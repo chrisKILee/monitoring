@@ -14,6 +14,7 @@ export async function GET() {
       orgId: true,
       sortOrder: true,
       isActive: true,
+      alertsEnabled: true,
       aiTool: true,
       hiddenFromDashboard: true,
       phoneAuth: true,

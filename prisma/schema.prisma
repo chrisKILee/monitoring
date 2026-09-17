@@ -19,6 +19,7 @@ model Account {
   hiddenFromDashboard Boolean         @default(false)
   sortOrder           Int             @default(0)
   isActive            Boolean         @default(true)
+  alertsEnabled       Boolean         @default(true)
 
   // Claude 수집
   orgId               String?         @unique
