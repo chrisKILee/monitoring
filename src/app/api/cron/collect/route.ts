@@ -71,6 +71,7 @@ async function collectClaudeAccount(account: {
   name: string
   orgId: string | null
   encryptedCookies: string | null
+  alertsEnabled: boolean
 }) {
   if (!account.orgId || !account.encryptedCookies) {
     throw new Error(`Claude 계정 ${account.name}에 orgId 또는 cookies가 없습니다`)
@@ -117,16 +118,16 @@ async function collectClaudeAccount(account: {
 
     // 알람 판단
     if (predictExceed5h) {
-      await sendAlert(account.id, account.name, 'EXCEED_5H', `5시간 윈도우 사용량 ${usage.utilization5h}% (90% 초과)`)
+      await sendAlert(account, 'EXCEED_5H', `5시간 윈도우 사용량 ${usage.utilization5h}% (90% 초과)`)
     } else if (predictExceed7d) {
-      await sendAlert(account.id, account.name, 'EXCEED_7D', `7일 윈도우 사용량 ${usage.utilization7d}% (90% 초과)`)
+      await sendAlert(account, 'EXCEED_7D', `7일 윈도우 사용량 ${usage.utilization7d}% (90% 초과)`)
     }
 
     if (usage.expiresAt && isExpiringSoon(usage.expiresAt)) {
       const days = Math.ceil(
         (usage.expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
       )
-      await sendAlert(account.id, account.name, 'EXPIRY_SOON', `만료 ${days}일 전 (${usage.expiresAt.toLocaleDateString('ko-KR')})`)
+      await sendAlert(account, 'EXPIRY_SOON', `만료 ${days}일 전 (${usage.expiresAt.toLocaleDateString('ko-KR')})`)
     }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
@@ -137,7 +138,7 @@ async function collectClaudeAccount(account: {
       data: { lastError: message },
     })
 
-    await sendAlert(account.id, account.name, alertType, message)
+    await sendAlert(account, alertType, message)
     throw err
   }
 }
@@ -146,6 +147,7 @@ async function collectCodexAccount(account: {
   id: string
   name: string
   encryptedToken: string | null
+  alertsEnabled: boolean
 }) {
   if (!account.encryptedToken) {
     throw new Error(`Codex 계정 ${account.name}에 토큰이 없습니다`)
@@ -185,9 +187,9 @@ async function collectCodexAccount(account: {
     })
 
     if (predictExceed5h) {
-      await sendAlert(account.id, account.name, 'EXCEED_5H', `5시간 윈도우 사용량 ${usage.utilization5h}% (90% 초과)`)
+      await sendAlert(account, 'EXCEED_5H', `5시간 윈도우 사용량 ${usage.utilization5h}% (90% 초과)`)
     } else if (predictExceed7d) {
-      await sendAlert(account.id, account.name, 'EXCEED_7D', `7일 윈도우 사용량 ${usage.utilization7d}% (90% 초과)`)
+      await sendAlert(account, 'EXCEED_7D', `7일 윈도우 사용량 ${usage.utilization7d}% (90% 초과)`)
     }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
@@ -198,8 +200,7 @@ async function collectCodexAccount(account: {
     })
 
     await sendAlert(
-      account.id,
-      account.name,
+      account,
       err instanceof TokenExpiredError ? 'FETCH_ERROR' : 'FETCH_ERROR',
       message,
     )

@@ -81,7 +81,7 @@ describe('POST /api/cron/collect', () => {
 
   it('계정 수집 성공 시 UsageLog를 저장하고 collected 수를 반환해야 한다', async () => {
     ;(mockPrisma.account.findMany as jest.Mock).mockResolvedValue([
-      { id: 'acc-1', name: '테스트계정', orgId: 'org-1', encryptedCookies: '{}' },
+      { id: 'acc-1', name: '테스트계정', orgId: 'org-1', encryptedCookies: '{}', alertsEnabled: true, aiTool: 'claude' },
     ])
     mockFetchUsage.mockResolvedValue({
       utilization5h: 30,
@@ -113,7 +113,7 @@ describe('POST /api/cron/collect', () => {
 
   it('수집 실패 시 errors에 포함하고 알람을 발송해야 한다', async () => {
     ;(mockPrisma.account.findMany as jest.Mock).mockResolvedValue([
-      { id: 'acc-1', name: '실패계정', orgId: 'org-1', encryptedCookies: '{}' },
+      { id: 'acc-1', name: '실패계정', orgId: 'org-1', encryptedCookies: '{}', alertsEnabled: true, aiTool: 'claude' },
     ])
     mockFetchUsage.mockRejectedValue(new Error('Network error'))
     ;(mockPrisma.account.update as jest.Mock).mockResolvedValue({})
@@ -126,7 +126,29 @@ describe('POST /api/cron/collect', () => {
     expect(body.collected).toBe(0)
     expect(body.errors).toHaveLength(1)
     expect(mockSendAlert).toHaveBeenCalledWith(
-      'acc-1', '실패계정', 'FETCH_ERROR', expect.any(String)
+      expect.objectContaining({ id: 'acc-1', name: '실패계정' }),
+      'FETCH_ERROR',
+      expect.any(String)
+    )
+  })
+
+  it('alertsEnabled가 false인 계정도 수집은 정상 수행하고, sendAlert에는 alertsEnabled:false로 전달해야 한다', async () => {
+    ;(mockPrisma.account.findMany as jest.Mock).mockResolvedValue([
+      { id: 'acc-2', name: '알림꺼짐계정', orgId: 'org-2', encryptedCookies: '{}', alertsEnabled: false, aiTool: 'claude' },
+    ])
+    mockFetchUsage.mockRejectedValue(new Error('Network error'))
+    ;(mockPrisma.account.update as jest.Mock).mockResolvedValue({})
+    mockSendAlert.mockResolvedValue(undefined)
+
+    const res = await POST(makeRequest(CRON_SECRET))
+    const body = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(body.errors).toHaveLength(1)
+    expect(mockSendAlert).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'acc-2', alertsEnabled: false }),
+      'FETCH_ERROR',
+      expect.any(String)
     )
   })
 })

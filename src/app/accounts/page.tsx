@@ -24,6 +24,7 @@ interface Account {
   orgId: string | null
   sortOrder: number
   isActive: boolean
+  alertsEnabled: boolean
   aiTool: AiTool
   hiddenFromDashboard: boolean
   phoneAuth: string | null
@@ -227,6 +228,20 @@ export default function AccountsPage() {
     }
   }
 
+  async function handleToggleAlerts(acc: Account) {
+    const next = !acc.alertsEnabled
+    setAccounts(prev => prev.map(a => a.id === acc.id ? { ...a, alertsEnabled: next } : a))
+    const res = await fetch(`/api/accounts/${acc.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ alertsEnabled: next }),
+    })
+    if (!res.ok) {
+      setAccounts(prev => prev.map(a => a.id === acc.id ? { ...a, alertsEnabled: acc.alertsEnabled } : a))
+      alert('알림 상태 변경 실패')
+    }
+  }
+
   const stats = useMemo(() => ({
     total: accounts.length,
     claude: accounts.filter(a => a.aiTool === 'claude').length,
@@ -234,6 +249,7 @@ export default function AccountsPage() {
     visible: accounts.filter(a => !a.hiddenFromDashboard).length,
     hidden: accounts.filter(a => a.hiddenFromDashboard).length,
     paused: accounts.filter(a => !a.isActive).length,
+    alertsMuted: accounts.filter(a => !a.alertsEnabled).length,
     totalMembers: accounts.reduce((sum, a) => sum + a.memberCount, 0),
   }), [accounts])
 
@@ -263,13 +279,14 @@ export default function AccountsPage() {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-2 md:grid-cols-7 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-8 gap-3">
             <StatCard label="전체" value={stats.total} />
             <StatCard label="Claude" value={stats.claude} accent="text-orange-600 dark:text-orange-400" />
             <StatCard label="Codex" value={stats.codex} accent="text-sky-600 dark:text-sky-400" />
             <StatCard label="대시보드 표시" value={stats.visible} accent="text-green-600 dark:text-green-400" />
             <StatCard label="숨김" value={stats.hidden} accent="text-muted-foreground" />
             <StatCard label="수집 정지" value={stats.paused} accent={stats.paused > 0 ? 'text-yellow-600 dark:text-yellow-400' : 'text-muted-foreground'} />
+            <StatCard label="알림 꺼짐" value={stats.alertsMuted} accent={stats.alertsMuted > 0 ? 'text-yellow-600 dark:text-yellow-400' : 'text-muted-foreground'} />
             <StatCard label="총 멤버" value={stats.totalMembers} accent="text-primary" />
           </div>
 
@@ -370,6 +387,15 @@ export default function AccountsPage() {
                               className={acc.isActive ? '' : 'border-yellow-500/40 text-yellow-700 dark:text-yellow-400'}
                             >
                               {acc.isActive ? '⏸' : '▶'}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleToggleAlerts(acc)}
+                              title={acc.alertsEnabled ? 'gchat 알림 켜짐 (클릭=끄기)' : 'gchat 알림 꺼짐 (클릭=켜기)'}
+                              className={acc.alertsEnabled ? '' : 'border-yellow-500/40 text-yellow-700 dark:text-yellow-400'}
+                            >
+                              {acc.alertsEnabled ? '🔔' : '🔕'}
                             </Button>
                             <Button size="sm" variant="outline"
                               onClick={() => { setEditTarget(acc); setFormOpen(true) }}>

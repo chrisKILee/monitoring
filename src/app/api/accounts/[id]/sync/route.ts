@@ -22,6 +22,7 @@ export async function POST(_req: Request, { params }: Params) {
       orgId: true,
       encryptedCookies: true,
       encryptedToken: true,
+      alertsEnabled: true,
     },
   })
   if (!account) {
@@ -86,14 +87,14 @@ export async function POST(_req: Request, { params }: Params) {
     })
 
     if (predictExceed5h) {
-      await sendAlert(account.id, account.name, 'EXCEED_5H', `5시간 윈도우 사용량 ${usage.utilization5h}% (90% 초과)`)
+      await sendAlert(account, 'EXCEED_5H', `5시간 윈도우 사용량 ${usage.utilization5h}% (90% 초과)`)
     } else if (predictExceed7d) {
-      await sendAlert(account.id, account.name, 'EXCEED_7D', `7일 윈도우 사용량 ${usage.utilization7d}% (90% 초과)`)
+      await sendAlert(account, 'EXCEED_7D', `7일 윈도우 사용량 ${usage.utilization7d}% (90% 초과)`)
     }
 
     if (usage.expiresAt && isExpiringSoon(usage.expiresAt)) {
       const days = Math.ceil((usage.expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
-      await sendAlert(account.id, account.name, 'EXPIRY_SOON', `만료 ${days}일 전 (${usage.expiresAt.toLocaleDateString('ko-KR')})`)
+      await sendAlert(account, 'EXPIRY_SOON', `만료 ${days}일 전 (${usage.expiresAt.toLocaleDateString('ko-KR')})`)
     }
 
     return NextResponse.json({ data: { success: true, utilization5h: usage.utilization5h, utilization7d: usage.utilization7d } })
@@ -106,7 +107,7 @@ export async function POST(_req: Request, { params }: Params) {
       data: { lastError: message },
     })
 
-    await sendAlert(account.id, account.name, alertType, message)
+    await sendAlert(account, alertType, message)
 
     return NextResponse.json(
       { error: { code: 'FETCH_ERROR', message } },

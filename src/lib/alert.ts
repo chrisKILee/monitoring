@@ -3,8 +3,7 @@ import { prisma } from '@/lib/prisma'
 export type AlertType = 'EXPIRY_SOON' | 'EXCEED_5H' | 'EXCEED_7D' | 'FETCH_ERROR'
 
 export async function sendAlert(
-  accountId: string,
-  accountName: string,
+  account: { id: string; name: string; alertsEnabled: boolean },
   type: AlertType,
   detail: string
 ): Promise<void> {
@@ -15,11 +14,14 @@ export async function sendAlert(
     FETCH_ERROR: '❌',
   }
 
-  const message = `${emoji[type]} [claude-usage-monitor]\n*${accountName}* — ${detail}`
+  const message = `${emoji[type]} [claude-usage-monitor]\n*${account.name}* — ${detail}`
 
-  await sendGoogleChat(message)
+  if (account.alertsEnabled) {
+    await sendGoogleChat(message)
+  }
+
   await prisma.alertLog.create({
-    data: { accountId, alertType: type, message },
+    data: { accountId: account.id, alertType: type, message },
   })
 }
 

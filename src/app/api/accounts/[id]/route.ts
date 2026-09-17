@@ -42,6 +42,7 @@ export async function PUT(req: Request, { params }: Params) {
     cookiesJson?: string
     tokenInput?: string
     isActive?: boolean
+    alertsEnabled?: boolean
     sortOrder?: number
     aiTool?: AiTool
     hiddenFromDashboard?: boolean
@@ -79,12 +80,13 @@ export async function PUT(req: Request, { params }: Params) {
         }
       })()),
       ...(body.isActive !== undefined && { isActive: body.isActive }),
+      ...(body.alertsEnabled !== undefined && { alertsEnabled: body.alertsEnabled }),
       ...(body.sortOrder !== undefined && { sortOrder: body.sortOrder }),
       ...(body.aiTool !== undefined && { aiTool: body.aiTool }),
       ...(body.hiddenFromDashboard !== undefined && { hiddenFromDashboard: body.hiddenFromDashboard }),
     },
     select: {
-      id: true, name: true, alias: true, orgId: true, isActive: true,
+      id: true, name: true, alias: true, orgId: true, isActive: true, alertsEnabled: true,
       sortOrder: true, aiTool: true, hiddenFromDashboard: true, updatedAt: true,
     },
   })
