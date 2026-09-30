@@ -17,6 +17,8 @@ export class CodexFetchError extends Error {
 interface CodexWindow {
   used_percent?: number | null
   reset_at?: number | null
+  reset_after_seconds?: number | null
+  limit_window_seconds?: number | null
 }
 
 interface CodexRateLimit {
@@ -39,6 +41,41 @@ function parseWindow(win: CodexWindow | null | undefined): { utilization: number
   const utilization = typeof win.used_percent === 'number' ? win.used_percent : null
   const resetAt = typeof win.reset_at === 'number' ? new Date(win.reset_at * 1000) : null
   return { utilization, resetAt }
+}
+
+type ParsedWindow = ReturnType<typeof parseWindow>
+
+const EMPTY_WINDOW: ParsedWindow = { utilization: null, resetAt: null }
+/** 이 길이(초) 이하면 5시간 윈도우, 초과면 7일 윈도우로 본다 */
+const SHORT_WINDOW_MAX_SECONDS = 24 * 60 * 60
+
+/**
+ * 윈도우 종류는 위치(primary/secondary)가 아니라 limit_window_seconds로 판별한다.
+ * 5시간 제한이 폐지되면서 primary_window가 7일이 되고 secondary_window는 null이 됐다.
+ * limit_window_seconds가 없는 구형 응답은 primary=5h, secondary=7d로 폴백한다.
+ */
+export function classifyWindows(limit: CodexRateLimit | null | undefined): {
+  window5h: ParsedWindow
+  window7d: ParsedWindow
+} {
+  const ordered: Array<[CodexWindow | null | undefined, 'short' | 'long']> = [
+    [limit?.primary_window, 'short'],
+    [limit?.secondary_window, 'long'],
+  ]
+  let window5h = EMPTY_WINDOW
+  let window7d = EMPTY_WINDOW
+
+  for (const [win, fallback] of ordered) {
+    if (!win) continue
+    const seconds = win.limit_window_seconds
+    const kind =
+      typeof seconds === 'number'
+        ? seconds <= SHORT_WINDOW_MAX_SECONDS ? 'short' : 'long'
+        : fallback
+    if (kind === 'short') window5h = parseWindow(win)
+    else window7d = parseWindow(win)
+  }
+  return { window5h, window7d }
 }
 
 /** JWT payload의 exp claim 파싱 */
@@ -88,20 +125,18 @@ export async function fetchCodexUsage(token: string, accountName: string): Promi
 
   const raw = (await res.json()) as CodexUsageRaw
 
-  const primary = parseWindow(raw.rate_limit?.primary_window)
-  const secondary = parseWindow(raw.rate_limit?.secondary_window)
+  const { window5h, window7d } = classifyWindows(raw.rate_limit)
 
   // additional_rate_limits[0] → "7일 Spark" 자리 활용
-  const sparkLimit = raw.additional_rate_limits?.[0]?.rate_limit
-  const sparkSecondary = parseWindow(sparkLimit?.secondary_window)
+  const spark = classifyWindows(raw.additional_rate_limits?.[0]?.rate_limit).window7d
 
   return {
-    utilization5h: primary.utilization,
-    resetAt5h: primary.resetAt,
-    utilization7d: secondary.utilization,
-    resetAt7d: secondary.resetAt,
-    utilization7dSonnet: sparkSecondary.utilization,
-    resetAt7dSonnet: sparkSecondary.resetAt,
+    utilization5h: window5h.utilization,
+    resetAt5h: window5h.resetAt,
+    utilization7d: window7d.utilization,
+    resetAt7d: window7d.resetAt,
+    utilization7dSonnet: spark.utilization,
+    resetAt7dSonnet: spark.resetAt,
     usedMessages: null,
     totalMessages: null,
     usagePercent: null,

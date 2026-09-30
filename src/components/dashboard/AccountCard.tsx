@@ -133,7 +133,7 @@ function resetLabel(resetAt: string | null, now: number | null): string {
   if (diff <= 0) return '곧 초기화'
   const h = Math.floor(diff / 3_600_000)
   const m = Math.floor((diff % 3_600_000) / 60_000)
-  if (h >= 24) return `${Math.floor(h / 24)}일 후 초기화`
+  if (h >= 24) return `${Math.floor(h / 24)}일 ${h % 24}h 후 초기화`
   if (h > 0) return `${h}h ${m}m 후 초기화`
   return `${m}m 후 초기화`
 }
@@ -398,12 +398,15 @@ export function AccountCard({ account }: { account: AccountLatest }) {
 
         {latest ? (
           <>
-            <Segmented5hBar
-              value={latest.utilization5h}
-              resetAt={latest.resetAt5h}
-              danger
-              now={now}
-            />
+            {/* Codex는 5시간 제한이 폐지되어 5h 윈도우 값이 없으면 바를 숨긴다 */}
+            {!(account.aiTool === 'codex' && latest.utilization5h === null) && (
+              <Segmented5hBar
+                value={latest.utilization5h}
+                resetAt={latest.resetAt5h}
+                danger
+                now={now}
+              />
+            )}
             <Grid7dBar
               label="7일 (전체)"
               value={latest.utilization7d}
